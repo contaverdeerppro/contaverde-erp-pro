@@ -28,7 +28,7 @@
         }
     </script>
     <!-- Google Fonts Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; color: #1e293b; overflow-x: hidden; }
         @media print {
@@ -42,13 +42,13 @@
         ::-webkit-scrollbar-track { background: #e2e8f0; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        
+
         @keyframes floatSlow {
             0%, 100% { transform: translateY(0px) scale(1); }
             50% { transform: translateY(-8px) scale(1.03); }
         }
         @keyframes pulseGlow {
-            0%, 100% { opacity: 0.8; filter: drop-shadow(0 0 12px rgba(34, 197, 94, 0.5)); }
+            0%, 100% { opacity: 0.85; filter: drop-shadow(0 0 12px rgba(34, 197, 94, 0.5)); }
             50% { opacity: 1; filter: drop-shadow(0 0 28px rgba(34, 197, 94, 0.9)); }
         }
         @keyframes fadeInScale {
@@ -81,19 +81,48 @@
     <!-- Toast Notification System -->
     <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 no-print"></div>
 
-    <!-- Custom Modal for SKUs -->
-    <div id="custom-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
+    <!-- Custom Modal for SKUs (#custom-modal) -->
+    <div id="custom-modal" onclick="if(event.target === this) closeModal()" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
         <div class="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-md shadow-2xl">
-            <h3 id="modal-title" class="text-xl font-bold text-blue-900 mb-2">Gerenciador de SKUs</h3>
+            <div class="flex items-center justify-between mb-2">
+                <h3 id="modal-title" class="text-xl font-bold text-blue-900">Gerenciador de SKUs</h3>
+                <button type="button" onclick="closeModal()" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold flex items-center justify-center transition" title="Fechar">×</button>
+            </div>
             <p id="modal-desc" class="text-slate-600 text-sm mb-4">Selecione um produto salvo:</p>
             <div id="modal-body" class="mb-6"></div>
             <div class="flex justify-end gap-3">
-                <button type="button" onclick="confirmAddCustomLoss()" class="px-4 py-2 bg-blue-900 hover:bg-blue-800 text-white rounded-xl font-semibold transition">Adicionar</button>
+                <button type="button" onclick="closeModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-medium text-sm transition">Fechar</button>
+                <button type="button" onclick="addNewSkuFromModal()" class="px-4 py-2 bg-blue-900 hover:bg-blue-800 text-white rounded-xl font-semibold text-sm transition">+ Novo SKU</button>
             </div>
         </div>
     </div>
 
-    <!-- Quick Pre-Export Filename Modal (PDF, Excel & JSON Backup) -->
+    <!-- Custom Loss Modal (#custom-loss-modal) -->
+    <div id="custom-loss-modal" onclick="if(event.target === this) closeCustomLossModal()" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
+        <div class="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <div class="flex items-center justify-between mb-2">
+                <h3 class="text-xl font-bold text-blue-950">Adicionar Perda Personalizada</h3>
+                <button type="button" onclick="closeCustomLossModal()" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold flex items-center justify-center transition" title="Fechar">×</button>
+            </div>
+            <p class="text-slate-600 text-xs mb-4">Cadastre um gargalo operacional específico e o percentual estimado sobre o faturamento bruto mensal:</p>
+            <div class="space-y-4 mb-6">
+                <div>
+                    <label for="custom_loss_name" class="block text-xs font-semibold text-slate-700 mb-1">Nome da Perda / Gargalo Operacional</label>
+                    <input type="text" id="custom_loss_name" placeholder="Ex: Quebra de caixa / Furtos / Devoluções" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-600 text-slate-800">
+                </div>
+                <div>
+                    <label for="custom_loss_pct" class="block text-xs font-semibold text-slate-700 mb-1">Impacto Estimado sobre Faturamento (%)</label>
+                    <input type="number" id="custom_loss_pct" value="2.0" step="0.1" min="0" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-600 text-slate-800 font-semibold">
+                </div>
+            </div>
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="closeCustomLossModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-medium text-sm transition">Cancelar</button>
+                <button type="button" onclick="confirmAddCustomLoss()" class="px-4 py-2 bg-blue-900 hover:bg-blue-800 text-white rounded-xl font-semibold text-sm transition">Adicionar Perda</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Pre-Export Filename Modal (#export-filename-modal) -->
     <div id="export-filename-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
         <div class="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-lg shadow-2xl">
             <div class="flex items-center justify-between mb-2">
@@ -145,7 +174,7 @@
                     Domine a saúde financeira da sua empresa com controladoria multi-SKU, simulação tributária automatizada para 27 estados, auditoria por IA (CFO Virtual) e relatórios executivos auditados.
                 </p>
             </div>
-            
+
             <!-- Dynamic Feature Carousel Box -->
             <div id="pitch-carousel-box" class="p-4 bg-blue-900/50 border border-emerald-500/40 rounded-2xl backdrop-blur max-w-lg mx-auto transition-all duration-500 shadow-xl">
                 <div class="flex items-center justify-center gap-2 mb-1">
@@ -161,8 +190,8 @@
                 </div>
             </div>
 
-            <div class="pt-2">
-                <button type="button" onclick="proceedToVinheta()" class="px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-bold text-base shadow-2xl transition transform hover:scale-105 border border-emerald-400 animate-pulse">
+            <div class="pt-2 flex flex-wrap items-center justify-center gap-3">
+                <button type="button" onclick="proceedToVinheta()" class="px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-bold text-base shadow-2xl transition transform hover:scale-105 border border-emerald-400">
                     Iniciar Experiência do Sistema ▶
                 </button>
             </div>
@@ -191,15 +220,18 @@
             <div class="w-48 h-1.5 bg-slate-800 rounded-full mx-auto overflow-hidden">
                 <div id="vinheta-progress" class="w-full h-full bg-gradient-to-r from-emerald-500 to-blue-500 transition-all duration-1000 transform -translate-x-full"></div>
             </div>
-            <div class="pt-2">
+            <div class="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
                 <button type="button" onclick="dismissVinheta()" class="px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-sm shadow-xl transition transform hover:scale-105 border border-emerald-400">
                     Entrar no Sistema ▶
+                </button>
+                <button type="button" onclick="goDirectToErpFromVinheta()" class="px-6 py-3 bg-blue-900/80 hover:bg-blue-800 text-blue-100 hover:text-white rounded-xl font-semibold text-sm shadow-lg transition border border-blue-600/70">
+                    ⚡ Ir direto ao ERP
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- 3. WELCOME SCREEN -->
+    <!-- 3. WELCOME SCREEN (MODE SELECTION) -->
     <div id="welcome-screen" class="fixed inset-0 bg-gradient-to-br from-blue-950 via-blue-900 to-slate-950 z-40 hidden flex flex-col items-center justify-center p-6 text-white text-center">
         <div class="max-w-2xl mx-auto space-y-6 animate-welcome">
             <div class="w-28 h-28 rounded-3xl bg-blue-800/80 border border-blue-600/50 flex items-center justify-center shadow-2xl mx-auto backdrop-blur-md p-4 animate-logo-float">
@@ -378,10 +410,8 @@
                         <span id="mei-alert-badge" class="text-xs px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200">Enquadramento OK</span>
                     </div>
                     <p class="text-xs text-slate-500 mb-4">Compara o imposto anual estimado considerando o faturamento anual bruto projetado (baseado nas vendas e sazonalidade):</p>
-                    
-                    <div id="mei-warning-box" class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900 hidden">
-                        <!-- Injetado via JS -->
-                    </div>
+
+                    <div id="mei-warning-box" class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900 hidden"></div>
 
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-xs">
@@ -393,14 +423,12 @@
                                     <th class="p-2.5">Viabilidade</th>
                                 </tr>
                             </thead>
-                            <tbody id="regimes-comparison-tbody" class="divide-y divide-slate-100">
-                                <!-- Injetado via JS -->
-                            </tbody>
+                            <tbody id="regimes-comparison-tbody" class="divide-y divide-slate-100"></tbody>
                         </table>
                     </div>
                 </div>
 
-                <!-- MODULE 2: Precificação Reversa por Margem Desejada (Markup Automático) -->
+                <!-- MODULE 2: Precificação Reversa por Margem Desejada -->
                 <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                     <div class="flex items-center justify-between mb-3">
                         <h2 class="text-sm font-bold uppercase tracking-wider text-blue-950 flex items-center gap-2">
@@ -492,7 +520,6 @@
                             <span>Inadimplência de clientes fiados ou boletos</span>
                         </label>
                     </div>
-                    <!-- Container for custom losses -->
                     <div id="custom-losses-container" class="mt-2 space-y-2 text-xs"></div>
                     <div class="mt-3 text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 p-2.5 rounded-xl flex items-center justify-between">
                         <span>Estimativa de Desperdício Mensal Identificado:</span>
@@ -508,54 +535,18 @@
                     </h2>
                     <p class="text-xs text-slate-500 mb-3">Fator multiplicador de vendas por mês (1.0 = Média normal, 1.5 = Pico de vendas, 0.7 = Baixa temporada):</p>
                     <div class="grid grid-cols-4 sm:grid-cols-6 gap-2 text-xs">
-                        <div>
-                            <label class="block text-[10px] text-slate-500 font-medium">Jan</label>
-                            <input type="number" id="saz_1" value="1.0" step="0.1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-center">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] text-slate-500 font-medium">Fev</label>
-                            <input type="number" id="saz_2" value="1.0" step="0.1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-center">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] text-slate-500 font-medium">Mar</label>
-                            <input type="number" id="saz_3" value="1.0" step="0.1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-center">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] text-slate-500 font-medium">Abr</label>
-                            <input type="number" id="saz_4" value="1.0" step="0.1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-center">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] text-slate-500 font-medium">Mai</label>
-                            <input type="number" id="saz_5" value="1.0" step="0.1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-center">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] text-slate-500 font-medium">Jun</label>
-                            <input type="number" id="saz_6" value="1.0" step="0.1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-center">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] text-slate-500 font-medium">Jul</label>
-                            <input type="number" id="saz_7" value="1.0" step="0.1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-center">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] text-slate-500 font-medium">Ago</label>
-                            <input type="number" id="saz_8" value="1.0" step="0.1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-center">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] text-slate-500 font-medium">Set</label>
-                            <input type="number" id="saz_9" value="1.0" step="0.1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-center">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] text-slate-500 font-medium">Out</label>
-                            <input type="number" id="saz_10" value="1.0" step="0.1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-center">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] text-slate-500 font-medium">Nov</label>
-                            <input type="number" id="saz_11" value="1.2" step="0.1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-center">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] text-slate-500 font-medium">Dez</label>
-                            <input type="number" id="saz_12" value="1.5" step="0.1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-center">
-                        </div>
+                        <div><label class="block text-[10px] text-slate-500 font-medium">Jan</label><input type="number" id="saz_1" value="1.0" step="0.1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-center"></div>
+                        <div><label class="block text-[10px] text-slate-500 font-medium">Fev</label><input type="number" id="saz_2" value="1.0" step="0.1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-center"></div>
+                        <div><label class="block text-[10px] text-slate-500 font-medium">Mar</label><input type="number" id="saz_3" value="1.0" step="0.1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-center"></div>
+                        <div><label class="block text-[10px] text-slate-500 font-medium">Abr</label><input type="number" id="saz_4" value="1.0" step="0.1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-center"></div>
+                        <div><label class="block text-[10px] text-slate-500 font-medium">Mai</label><input type="number" id="saz_5" value="1.0" step="0.1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-center"></div>
+                        <div><label class="block text-[10px] text-slate-500 font-medium">Jun</label><input type="number" id="saz_6" value="1.0" step="0.1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-center"></div>
+                        <div><label class="block text-[10px] text-slate-500 font-medium">Jul</label><input type="number" id="saz_7" value="1.0" step="0.1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-center"></div>
+                        <div><label class="block text-[10px] text-slate-500 font-medium">Ago</label><input type="number" id="saz_8" value="1.0" step="0.1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-center"></div>
+                        <div><label class="block text-[10px] text-slate-500 font-medium">Set</label><input type="number" id="saz_9" value="1.0" step="0.1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-center"></div>
+                        <div><label class="block text-[10px] text-slate-500 font-medium">Out</label><input type="number" id="saz_10" value="1.0" step="0.1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-center"></div>
+                        <div><label class="block text-[10px] text-slate-500 font-medium">Nov</label><input type="number" id="saz_11" value="1.2" step="0.1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-center"></div>
+                        <div><label class="block text-[10px] text-slate-500 font-medium">Dez</label><input type="number" id="saz_12" value="1.5" step="0.1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-center"></div>
                     </div>
                     <div class="mt-3 text-xs text-slate-600 flex justify-between items-center bg-slate-50 p-2.5 rounded-xl border border-slate-200">
                         <span>Faturamento Anual Projetado com Sazonalidade:</span>
@@ -782,7 +773,7 @@
                     <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm card-print">
                         <span class="text-xs text-slate-500 font-medium">Fôlego de Caixa (Runway)</span>
                         <div id="out-runway" class="text-xl font-bold text-blue-600 mt-1">0.0 meses</div>
-                        <span class="text-[11px] text-slate-500 font-medium">Reserva sem vendas</span>
+                        <span id="out-runway-lbl" class="text-[11px] text-slate-500 font-medium">Reserva sem vendas</span>
                     </div>
                 </div>
 
@@ -868,7 +859,7 @@
 
         </main>
 
-        <!-- Dedicated Executive PDF Report Template (Clean Corporate Layout, hidden in normal view, rendered specifically for PDF export) -->
+        <!-- Dedicated Executive PDF Report Template -->
         <div id="executive-pdf-report" class="print-only bg-white text-slate-900 p-10 max-w-[210mm] mx-auto text-xs font-sans">
             <div class="flex justify-between items-center pb-6 border-b-2 border-blue-900 mb-6">
                 <div>
@@ -876,12 +867,11 @@
                     <p class="text-xs text-emerald-600 font-semibold uppercase tracking-wider">Relatório Executivo de Controladoria & IA</p>
                 </div>
                 <div class="text-right">
-                    <div id="pdf-rep-date" class="font-bold text-slate-700">Data: 16/11/2026</div>
+                    <div id="pdf-rep-date" class="font-bold text-slate-700">Data: 19/11/2026</div>
                     <div class="text-[10px] text-slate-500">Módulo v8.6 Auditado</div>
                 </div>
             </div>
 
-            <!-- Company Info Box -->
             <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-6 grid grid-cols-2 gap-4">
                 <div>
                     <span class="text-[10px] text-slate-500 block uppercase font-bold">Empresa / Razão Social</span>
@@ -893,7 +883,6 @@
                 </div>
             </div>
 
-            <!-- Key Metrics Executive Grid -->
             <h3 class="font-bold text-blue-950 text-sm uppercase mb-3 border-l-4 border-emerald-500 pl-2">1. Sumário de Indicadores Vitais (KPIs)</h3>
             <div class="grid grid-cols-4 gap-3 mb-6">
                 <div class="bg-blue-50/60 border border-blue-200 rounded-xl p-3 text-center">
@@ -914,7 +903,6 @@
                 </div>
             </div>
 
-            <!-- DRE Executiva Table -->
             <h3 class="font-bold text-blue-950 text-sm uppercase mb-3 border-l-4 border-emerald-500 pl-2">2. DRE Gerencial Consolidada</h3>
             <table class="w-full text-left border border-slate-200 rounded-xl mb-6 overflow-hidden">
                 <thead>
@@ -923,18 +911,14 @@
                         <th class="p-2.5 text-right">Valor Mensal (R$)</th>
                     </tr>
                 </thead>
-                <tbody id="pdf-rep-dre-tbody" class="divide-y divide-slate-100 text-xs">
-                    <!-- Injected via JS -->
-                </tbody>
+                <tbody id="pdf-rep-dre-tbody" class="divide-y divide-slate-100 text-xs"></tbody>
             </table>
 
-            <!-- CFO Diagnostics Audit -->
             <h3 class="font-bold text-blue-950 text-sm uppercase mb-2 border-l-4 border-emerald-500 pl-2">3. Parecer do CFO Virtual & Auditoria</h3>
             <div id="pdf-rep-audit-text" class="p-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 text-xs mb-8 leading-relaxed">
                 Aguardando dados para auditoria...
             </div>
 
-            <!-- Official Verification Footer -->
             <div class="mt-12 pt-4 border-t-2 border-slate-300 text-center text-[10px] text-slate-600">
                 <p class="font-bold text-blue-950">Documento gerado, auditado e verificado por ContaVerde ERP Pro • Controladoria & IA</p>
                 <p class="text-slate-400 mt-0.5">Autenticidade garantida por motor offline seguro • Versão 8.6</p>
@@ -946,18 +930,15 @@
         </footer>
     </div>
 
-    <!-- JAVASCRIPT -->
     <script>
         let currentMode = 'full';
         let portfolioProducts = [];
         let customLosses = [];
         let globalSuggestedPrice = 0;
 
-        // Pending export state for pre-download filename customization modal
-        let pendingExportAction = null; // 'pdf' | 'excel' | 'json'
+        let pendingExportAction = null;
         let pendingExportExt = '';
 
-        // Dynamic Pitch Carousel Data
         const pitchFeatures = [
             { icon: "🔮", title: "Simulador Estratégico \"E Se\"", desc: "Simule variações percentuais em preço, volume e custos fixos visualizando o impacto imediato no lucro líquido." },
             { icon: "🏛️", title: "Tributos & Refis 60 Meses", desc: "Cálculo integrado para Simples Nacional, Lucro Real, Presumido e MEI em 27 estados com simulador de parcelamento fiscal." },
@@ -974,15 +955,15 @@
                 const titleEl = document.getElementById('carousel-title');
                 const descEl = document.getElementById('carousel-desc');
                 const box = document.getElementById('pitch-carousel-box');
-                
-                if(iconEl && titleEl && descEl && box) {
+
+                if (iconEl && titleEl && descEl && box) {
                     box.style.opacity = '0.3';
                     setTimeout(() => {
                         iconEl.innerText = f.icon;
                         titleEl.innerText = f.title;
                         descEl.innerText = f.desc;
                         box.style.opacity = '1';
-                        
+
                         document.querySelectorAll('.indicator-dot').forEach((dot, idx) => {
                             dot.className = `w-2 h-2 rounded-full indicator-dot ${idx === currentCarouselIndex ? 'bg-emerald-400' : 'bg-slate-600'}`;
                         });
@@ -999,6 +980,30 @@
             'RS': 17.0, 'RO': 19.0, 'RR': 20.0, 'SC': 17.0, 'SP': 18.0,
             'SE': 19.0, 'TO': 20.0, 'CUSTOM': 18.0
         };
+
+        function showScreen(screenName) {
+            const pitch = document.getElementById('pitch-screen');
+            const vinheta = document.getElementById('cinematic-vinheta');
+            const welcome = document.getElementById('welcome-screen');
+            const erp = document.getElementById('erp-wrapper');
+
+            [pitch, vinheta, welcome, erp].forEach(el => {
+                if (el) {
+                    el.classList.add('hidden');
+                    el.style.opacity = '1';
+                    el.style.transform = 'none';
+                }
+            });
+
+            if (screenName === 'pitch' && pitch) pitch.classList.remove('hidden');
+            if (screenName === 'vinheta' && vinheta) {
+                vinheta.classList.remove('hidden');
+                const pb = document.getElementById('vinheta-progress');
+                if (pb) setTimeout(() => pb.style.transform = 'translateX(0)', 100);
+            }
+            if (screenName === 'welcome' && welcome) welcome.classList.remove('hidden');
+            if (screenName === 'erp' && erp) erp.classList.remove('hidden');
+        }
 
         function proceedToVinheta() {
             const pitch = document.getElementById('pitch-screen');
@@ -1026,37 +1031,53 @@
             }
         }
 
+        function goDirectToErpFromVinheta() {
+            const v = document.getElementById('cinematic-vinheta');
+            if (v) {
+                v.style.transition = 'all 0.5s ease';
+                v.style.opacity = '0';
+                v.style.transform = 'scale(1.03)';
+                setTimeout(() => {
+                    showScreen('erp');
+                    setMode('full');
+                    calculate();
+                }, 450);
+            } else {
+                showScreen('erp');
+                setMode('full');
+                calculate();
+            }
+        }
+
         function openCalculatorWithMode(mode) {
-            document.getElementById('welcome-screen').classList.add('hidden');
-            document.getElementById('erp-wrapper').classList.remove('hidden');
+            showScreen('erp');
             setMode(mode);
             calculate();
         }
 
         function returnToWelcome() {
-            document.getElementById('erp-wrapper').classList.add('hidden');
-            document.getElementById('welcome-screen').classList.remove('hidden');
+            showScreen('welcome');
         }
 
         function onEstadoChange() {
             const st = document.getElementById('estado').value;
-            if(stateIcmsRates[st] !== undefined) {
+            if (stateIcmsRates[st] !== undefined) {
                 document.getElementById('icms_aliquota').value = stateIcmsRates[st];
             }
             calculate();
         }
 
-        function showToast(msg, type='success') {
+        function showToast(msg, type = 'success') {
             const container = document.getElementById('toast-container');
-            if(!container) return;
+            if (!container) return;
             const toast = document.createElement('div');
             toast.className = `px-4 py-3 rounded-xl border text-xs font-semibold shadow-lg transition-all duration-300 flex items-center gap-2 ${
-                type==='success' ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 
-                type==='error' ? 'bg-rose-50 border-rose-300 text-rose-800' : 'bg-slate-900 border-slate-700 text-slate-200'
+                type === 'success' ? 'bg-emerald-50 border-emerald-300 text-emerald-800' :
+                type === 'error' ? 'bg-rose-50 border-rose-300 text-rose-800' : 'bg-slate-900 border-slate-700 text-slate-200'
             }`;
-            toast.innerHTML = `<span>${type==='success'?'✅':type==='error'?'❌':'ℹ️'}</span> ${msg}`;
+            toast.innerHTML = `<span>${type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️'}</span> ${msg}`;
             container.appendChild(toast);
-            setTimeout(() => { toast.style.opacity='0'; setTimeout(()=>toast.remove(),300); }, 3000);
+            setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 3000);
         }
 
         function closeModal() { document.getElementById('custom-modal').classList.add('hidden'); }
@@ -1071,22 +1092,19 @@
             document.getElementById('custom-loss-modal').classList.add('hidden');
         }
 
-        // Generates a clean, filesystem-safe slug from the company name
         function sanitizeCompanyNameForFile(rawName) {
             const cleaned = (rawName || '')
                 .normalize('NFD')
-                .replace(/[\u0300-\u036f]/g, '') // remove accents
-                .replace(/[^a-zA-Z0-9]+/g, '_') // replace spaces/symbols with underscore
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-zA-Z0-9]+/g, '_')
                 .replace(/^_+|_+$/g, '');
             return cleaned || 'Empresa_Sem_Nome';
         }
 
-        // Generates a random 4-digit key (1000 to 9999)
         function generateRandom4DigitKey() {
             return Math.floor(1000 + Math.random() * 9000).toString();
         }
 
-        // Builds smart default filename base (without extension)
         function buildSmartExportFilenameBase(exportTypeLabel, randomKey) {
             const empresaRaw = document.getElementById('empresa_nome')?.value || '';
             const companySlug = sanitizeCompanyNameForFile(empresaRaw);
@@ -1095,7 +1113,6 @@
             return `${exportTypeLabel}_${companySlug}_${dateStr}_${key4}`;
         }
 
-        // Updates live filename preview inside export modal
         function updateExportFilenamePreview() {
             const inputEl = document.getElementById('export_filename_input');
             const previewEl = document.getElementById('export-modal-preview');
@@ -1109,7 +1126,6 @@
             previewEl.innerText = `Arquivo final: ${safeBase}${pendingExportExt}`;
         }
 
-        // Opens the quick pre-export modal for PDF, Excel, or JSON backup
         function openExportFilenameModal(actionType) {
             pendingExportAction = actionType;
             const modal = document.getElementById('export-filename-modal');
@@ -1146,13 +1162,11 @@
             }, 50);
         }
 
-        // Regenerates a new 4-digit random key in the current modal filename
         function regenerateExportRandomKey() {
             const inputEl = document.getElementById('export_filename_input');
             if (!inputEl) return;
             const newKey = generateRandom4DigitKey();
             const currentVal = inputEl.value.trim();
-            // Replace trailing 4-digit key if present, otherwise append _XXXX
             if (/_\d{4}$/.test(currentVal)) {
                 inputEl.value = currentVal.replace(/_\d{4}$/, `_${newKey}`);
             } else {
@@ -1167,7 +1181,6 @@
             pendingExportAction = null;
         }
 
-        // Executes the actual export using the user's confirmed/edited filename
         function confirmExportDownload() {
             const inputEl = document.getElementById('export_filename_input');
             const rawVal = (inputEl?.value || '').trim();
@@ -1191,8 +1204,9 @@
 
         function confirmAddCustomLoss() {
             const name = document.getElementById('custom_loss_name').value.trim();
-            const pct = parseFloat(document.getElementById('custom_loss_pct').value) || 0;
-            if(!name) {
+            const rawPct = String(document.getElementById('custom_loss_pct').value || '').replace(',', '.');
+            const pct = parseFloat(rawPct) || 0;
+            if (!name) {
                 showToast('Informe o nome da perda personalizada!', 'error');
                 return;
             }
@@ -1213,9 +1227,9 @@
 
         function renderCustomLosses() {
             const container = document.getElementById('custom-losses-container');
-            if(!container) return;
+            if (!container) return;
             container.innerHTML = '';
-            if(customLosses.length === 0) return;
+            if (customLosses.length === 0) return;
             const grid = document.createElement('div');
             grid.className = 'grid grid-cols-1 md:grid-cols-2 gap-2 text-xs pt-1';
             customLosses.forEach(loss => {
@@ -1235,17 +1249,41 @@
 
         function updateCustomLossCheck(id, checked) {
             const loss = customLosses.find(l => l.id === id);
-            if(loss) loss.checked = checked;
+            if (loss) loss.checked = checked;
             calculate();
         }
 
         function getSavedSkus() {
-            try { return JSON.parse(localStorage.getItem('contaverde_skus_v8')) || []; } catch(e) { return []; }
+            try { return JSON.parse(localStorage.getItem('contaverde_skus_v8')) || []; } catch (e) { return []; }
         }
 
         function saveSkusList(skus) {
-            try { localStorage.setItem('contaverde_skus_v8', JSON.stringify(skus)); } catch(e) {}
+            try { localStorage.setItem('contaverde_skus_v8', JSON.stringify(skus)); } catch (e) {}
         }
+
+        function addNewSkuFromModal() {
+            const nameInput = document.getElementById('sku_nome');
+            const currentName = nameInput ? nameInput.value.trim() : '';
+            if (currentName) {
+                saveCurrentSku();
+                openSkuManager();
+            } else {
+                closeModal();
+                if (nameInput) {
+                    nameInput.focus();
+                    nameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                showToast('Preencha o nome e valores do SKU e clique em "Salvar SKU".', 'info');
+            }
+        }
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                closeModal();
+                closeCustomLossModal();
+                closeExportFilenameModal();
+            }
+        });
 
         function openSkuManager() {
             const modal = document.getElementById('custom-modal');
@@ -1256,13 +1294,16 @@
             descEl.innerText = 'Selecione ou exclua produtos salvos:';
             const skus = getSavedSkus();
             let html = '<div class="space-y-3 max-h-60 overflow-y-auto pr-1">';
-            if(skus.length === 0) html += '<p class="text-xs text-slate-500">Nenhum SKU salvo.</p>';
+            if (skus.length === 0) html += '<p class="text-xs text-slate-500">Nenhum SKU salvo.</p>';
             else {
                 skus.forEach((sku, idx) => {
+                    const safeName = sku.name || 'SKU sem nome';
+                    const safePreco = Number(sku.preco_venda) || 0;
+                    const safeVol = Number(sku.volume) || 0;
                     html += `<div class="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl flex items-center justify-between transition">
                         <div class="flex-1 cursor-pointer" onclick="loadSku(${idx})">
-                            <div class="font-bold text-blue-950 text-sm">${sku.name}</div>
-                            <div class="text-xs text-slate-500">Preço: R$ ${sku.preco_venda.toFixed(2)} | Vol: ${sku.volume} un.</div>
+                            <div class="font-bold text-blue-950 text-sm">${safeName}</div>
+                            <div class="text-xs text-slate-500">Preço: R$ ${safePreco.toFixed(2)} | Vol: ${safeVol} un.</div>
                         </div>
                         <div class="flex items-center gap-2">
                             <button type="button" onclick="loadSku(${idx})" class="text-xs px-2.5 py-1 bg-blue-100 text-blue-800 rounded-lg border font-medium">Carregar</button>
@@ -1279,7 +1320,7 @@
         function loadSku(idx) {
             const skus = getSavedSkus();
             const sku = skus[idx];
-            if(!sku) return;
+            if (!sku) return;
             document.getElementById('sku_nome').value = sku.name;
             document.getElementById('preco_venda').value = sku.preco_venda;
             document.getElementById('volume').value = sku.volume;
@@ -1302,24 +1343,24 @@
 
         function saveCurrentSku() {
             const name = document.getElementById('sku_nome').value.trim();
-            if(!name) { showToast('Informe o nome do produto!', 'error'); return; }
+            if (!name) { showToast('Informe o nome do produto!', 'error'); return; }
             const sku = {
                 name,
-                preco_venda: parseFloat(document.getElementById('preco_venda').value)||0,
-                volume: parseInt(document.getElementById('volume').value)||0,
-                custo_aquisicao: parseFloat(document.getElementById('custo_aquisicao').value)||0,
-                embalagem: parseFloat(document.getElementById('embalagem').value)||0,
-                frete_unitario: parseFloat(document.getElementById('frete_unitario').value)||0,
-                comissao: parseFloat(document.getElementById('comissao').value)||0
+                preco_venda: parseFloat(document.getElementById('preco_venda').value) || 0,
+                volume: parseInt(document.getElementById('volume').value) || 0,
+                custo_aquisicao: parseFloat(document.getElementById('custo_aquisicao').value) || 0,
+                embalagem: parseFloat(document.getElementById('embalagem').value) || 0,
+                frete_unitario: parseFloat(document.getElementById('frete_unitario').value) || 0,
+                comissao: parseFloat(document.getElementById('comissao').value) || 0
             };
             let skus = getSavedSkus();
             const idx = skus.findIndex(s => s.name.toLowerCase() === name.toLowerCase());
-            if(idx >= 0) skus[idx] = sku; else skus.push(sku);
+            if (idx >= 0) skus[idx] = sku; else skus.push(sku);
             saveSkusList(skus);
 
-            const cVarUnit = sku.custo_aquisicao + sku.embalagem + sku.frete_unitario + (sku.preco_venda * (sku.comissao/100));
+            const cVarUnit = sku.custo_aquisicao + sku.embalagem + sku.frete_unitario + (sku.preco_venda * (sku.comissao / 100));
             const pIdx = portfolioProducts.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
-            if(pIdx >= 0) {
+            if (pIdx >= 0) {
                 portfolioProducts[pIdx].preco = sku.preco_venda;
                 portfolioProducts[pIdx].qtd = sku.volume;
                 portfolioProducts[pIdx].custoVar = cVarUnit;
@@ -1333,21 +1374,25 @@
 
         function renderPortfolioTable() {
             const tbody = document.getElementById('portfolio-tbody');
-            if(!tbody) return;
+            if (!tbody) return;
             tbody.innerHTML = '';
-            if(portfolioProducts.length === 0) {
+            if (portfolioProducts.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400 text-xs">Nenhum produto no portfólio. Use "Salvar SKU".</td></tr>`;
                 return;
             }
             portfolioProducts.forEach((p, idx) => {
+                const preco = Number(p.preco) || 0;
+                const qtd = Number(p.qtd) || 0;
+                const custoVar = Number(p.custoVar) || 0;
+                const safeName = (p.name || '').replace(/"/g, '&quot;');
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-50 transition">
-                        <td class="p-2"><input type="text" value="${p.name}" oninput="updatePortfolio(${idx}, 'name', this.value)" class="w-full bg-slate-50 border rounded px-2 py-1 text-xs"></td>
-                        <td class="p-2"><input type="number" value="${p.preco}" step="0.5" oninput="updatePortfolio(${idx}, 'preco', this.value)" class="w-24 bg-slate-50 border rounded px-2 py-1 text-xs"></td>
-                        <td class="p-2"><input type="number" value="${p.qtd}" oninput="updatePortfolio(${idx}, 'qtd', this.value)" class="w-20 bg-slate-50 border rounded px-2 py-1 text-xs"></td>
-                        <td class="p-2"><input type="number" value="${p.custoVar}" step="0.5" oninput="updatePortfolio(${idx}, 'custoVar', this.value)" class="w-24 bg-slate-50 border rounded px-2 py-1 text-xs"></td>
-                        <td class="p-2 font-semibold text-slate-900">${formatBRL(p.preco * p.qtd)}</td>
-                        <td class="p-2 font-semibold text-blue-900">${formatBRL((p.preco - p.custoVar) * p.qtd)}</td>
+                        <td class="p-2"><input type="text" value="${safeName}" oninput="updatePortfolio(${idx}, 'name', this.value)" class="w-full bg-slate-50 border rounded px-2 py-1 text-xs"></td>
+                        <td class="p-2"><input type="number" value="${preco}" step="0.5" oninput="updatePortfolio(${idx}, 'preco', this.value)" class="w-24 bg-slate-50 border rounded px-2 py-1 text-xs"></td>
+                        <td class="p-2"><input type="number" value="${qtd}" oninput="updatePortfolio(${idx}, 'qtd', this.value)" class="w-20 bg-slate-50 border rounded px-2 py-1 text-xs"></td>
+                        <td class="p-2"><input type="number" value="${custoVar}" step="0.5" oninput="updatePortfolio(${idx}, 'custoVar', this.value)" class="w-24 bg-slate-50 border rounded px-2 py-1 text-xs"></td>
+                        <td class="p-2 font-semibold text-slate-900">${formatBRL(preco * qtd)}</td>
+                        <td class="p-2 font-semibold text-blue-900">${formatBRL((preco - custoVar) * qtd)}</td>
                         <td class="p-2 text-center"><button type="button" onclick="removePortfolioRow(${idx})" class="text-rose-600 font-bold px-2 py-1 rounded bg-rose-50 border">×</button></td>
                     </tr>`;
             });
@@ -1375,7 +1420,7 @@
             currentMode = mode;
             const est = document.getElementById('container-estoque-oculto');
             const esg = document.getElementById('container-esg');
-            if(mode === 'full') {
+            if (mode === 'full') {
                 est.style.display = 'block'; esg.style.display = 'block';
                 document.getElementById('btn-mode-full').className = 'px-3 py-1.5 rounded-lg font-medium transition bg-blue-700 text-white shadow';
                 document.getElementById('btn-mode-simple').className = 'px-3 py-1.5 rounded-lg font-medium transition text-blue-200 hover:text-white';
@@ -1394,7 +1439,7 @@
             const aliqLabel = document.getElementById('label-aliquota');
             const notice = document.getElementById('mei-das-notice');
 
-            if(regime === 'mei') {
+            if (regime === 'mei') {
                 rbtContainer.style.display = 'none';
                 aliqLabel.innerText = 'Imposto Variável (%)';
                 aliqInput.value = 0; aliqInput.disabled = true;
@@ -1403,7 +1448,7 @@
                 rbtContainer.style.display = 'block';
                 aliqInput.disabled = false;
                 aliqLabel.innerText = regime === 'simples' ? 'Alíquota Efetiva Federal (%)' : 'Alíquota Média (%)';
-                if(parseFloat(aliqInput.value) === 0) {
+                if (parseFloat(aliqInput.value) === 0) {
                     aliqInput.value = regime === 'simples' ? 6.0 : (regime === 'lucro_presumido' ? 11.33 : 14.25);
                 }
                 notice.classList.add('hidden');
@@ -1412,7 +1457,7 @@
         }
 
         function applySuggestedPrice() {
-            if(globalSuggestedPrice > 0) {
+            if (globalSuggestedPrice > 0) {
                 document.getElementById('preco_venda').value = globalSuggestedPrice.toFixed(2);
                 calculate();
                 showToast(`Preço sugerido de R$ ${globalSuggestedPrice.toFixed(2)} aplicado!`);
@@ -1422,9 +1467,9 @@
         function clearAll() {
             localStorage.removeItem('contaverde_erp_state_v8');
             document.querySelectorAll('input, select').forEach(el => {
-                if(el.type === 'number') el.value = '0';
-                else if(el.type === 'text') el.value = '';
-                else if(el.tagName === 'SELECT') el.selectedIndex = 0;
+                if (el.type === 'number') el.value = '0';
+                else if (el.type === 'text') el.value = '';
+                else if (el.tagName === 'SELECT') el.selectedIndex = 0;
             });
             portfolioProducts = [];
             customLosses = [];
@@ -1435,7 +1480,6 @@
             showToast('Sistema limpo com sucesso!');
         }
 
-        // MAIN CALCULATION ENGINE
         function calculate() {
             const getVal = id => parseFloat(document.getElementById(id).value) || 0;
             const regime = document.getElementById('regime').value;
@@ -1458,17 +1502,17 @@
             const fEscritorio = getVal('custo_escritorio');
             const fMkt = getVal('custo_mkt');
 
-            if(regime === 'simples' && rbt12 > 0) {
-                if(rbt12 <= 180000) aliquota = 4.0;
-                else if(rbt12 <= 360000) aliquota = 7.3;
-                else if(rbt12 <= 720000) aliquota = 9.5;
-                else if(rbt12 <= 1800000) aliquota = 10.7;
+            if (regime === 'simples' && rbt12 > 0) {
+                if (rbt12 <= 180000) aliquota = 4.0;
+                else if (rbt12 <= 360000) aliquota = 7.3;
+                else if (rbt12 <= 720000) aliquota = 9.5;
+                else if (rbt12 <= 1800000) aliquota = 10.7;
                 else aliquota = 14.0;
                 document.getElementById('aliquota').value = aliquota.toFixed(1);
             }
 
             let meiDas = regime === 'mei' ? 75.00 : 0;
-            if(regime === 'mei') aliquota = 0;
+            if (regime === 'mei') aliquota = 0;
 
             let totalRecPort = 0, totalCostPort = 0, totalQtdPort = 0;
             portfolioProducts.forEach(p => {
@@ -1485,9 +1529,8 @@
             const comissaoPct = getVal('comissao');
             const cVarUnit = cAquis + emb + frete + (pVenda * (comissaoPct / 100));
 
-            // Sazonalidade 12 meses
             let somaFatorSaz = 0;
-            for(let i=1; i<=12; i++) {
+            for (let i = 1; i <= 12; i++) {
                 somaFatorSaz += getVal(`saz_${i}`);
             }
             const mediaSazonal = somaFatorSaz / 12;
@@ -1501,16 +1544,15 @@
             const impostosFat = (receitaBrutaMensal * (totalImpostoPct / 100)) + icmsSt;
             const mcTotal = receitaBrutaMensal - impostosFat - custosVarTotais;
 
-            // Checklist de Perdas
             let perdaChecklist = 0;
-            if(document.getElementById('check_perdas_estoque')?.checked) perdaChecklist += receitaBrutaMensal * 0.03;
-            if(document.getElementById('check_retrabalho')?.checked) perdaChecklist += receitaBrutaMensal * 0.02;
-            if(document.getElementById('check_taxas_cartao')?.checked) perdaChecklist += receitaBrutaMensal * 0.015;
-            if(document.getElementById('check_inadimplencia')?.checked) perdaChecklist += receitaBrutaMensal * 0.025;
-            
+            if (document.getElementById('check_perdas_estoque')?.checked) perdaChecklist += receitaBrutaMensal * 0.03;
+            if (document.getElementById('check_retrabalho')?.checked) perdaChecklist += receitaBrutaMensal * 0.02;
+            if (document.getElementById('check_taxas_cartao')?.checked) perdaChecklist += receitaBrutaMensal * 0.015;
+            if (document.getElementById('check_inadimplencia')?.checked) perdaChecklist += receitaBrutaMensal * 0.025;
+
             customLosses.forEach(loss => {
                 const el = document.getElementById(loss.id);
-                if(el && el.checked) {
+                if (el && el.checked) {
                     perdaChecklist += receitaBrutaMensal * (loss.pct / 100);
                 }
             });
@@ -1518,7 +1560,6 @@
             document.getElementById('checklist-perda-out').innerText = formatBRL(perdaChecklist);
             document.getElementById('sazonal-total-out').innerText = formatBRL(receitaBrutaAnual);
 
-            // Custos Ocultos e ESG
             const cOportunidade = capital * ((cdi / 100) / 12);
             const cPerdasEstoque = capital * (perdas / 100);
             const totalVolEval = totalQtdPort > 0 ? totalQtdPort : vol;
@@ -1532,7 +1573,6 @@
             const resultadoLiquido = receitaBrutaMensal - custosTotais;
             const margemLiq = receitaBrutaMensal > 0 ? (resultadoLiquido / receitaBrutaMensal) * 100 : 0;
 
-            // SIMULADOR "E SE" (WHAT-IF)
             const whatifPrecoPct = getVal('whatif_preco_pct') / 100;
             const whatifVolPct = getVal('whatif_vol_pct') / 100;
             const whatifCustoFixoPct = getVal('whatif_custofixo_pct') / 100;
@@ -1562,7 +1602,6 @@
             const beUnid = avgMCUnit > 0 ? Math.ceil(custosFixosCompletos / avgMCUnit) : 0;
             const beRev = beUnid * avgPrice;
 
-            // Runway & Stress Test
             const caixa = Math.max(custosFixosCompletos * 1.5, 1000);
             const burn = Math.abs(resultadoLiquido < 0 ? -resultadoLiquido : (custosFixosCompletos * 0.1));
             const runway = burn > 0 ? (caixa / burn).toFixed(1) : '12.0';
@@ -1574,7 +1613,6 @@
             const r50 = (caixa / burn50).toFixed(1);
             const r100 = (caixa / burn100).toFixed(1);
 
-            // PRECIFICATION REVERSE (Markup)
             const targetMargin = getVal('target_margin') / 100;
             const impostosEVarPct = (totalImpostoPct / 100) + (comissaoPct / 100);
             const denominador = (1 - targetMargin - impostosEVarPct);
@@ -1582,27 +1620,25 @@
             globalSuggestedPrice = denominador > 0 ? (custoBaseUnit + (custosFixosCompletos / (totalVolEval || 1))) / denominador : custoBaseUnit * 2;
             document.getElementById('suggested-price-out').innerText = formatBRL(globalSuggestedPrice);
 
-            // SIMULADOR REFIS
             const refisDivida = getVal('refis_divida');
             const refisMeses = parseInt(document.getElementById('refis_parcelas').value) || 60;
-            const taxaRefisMensal = 0.008; // ~0.8% a.m. Selic/Refis
+            const taxaRefisMensal = 0.008;
             const refisTotal = refisDivida * Math.pow(1 + taxaRefisMensal, refisMeses);
             const refisParcela = refisTotal / refisMeses;
             document.getElementById('refis-parcela-out').innerText = formatBRL(refisParcela);
             document.getElementById('refis-total-out').innerText = formatBRL(refisTotal);
             document.getElementById('refis-impact-out').innerText = refisParcela > (resultadoLiquido * 0.5) ? 'Crítico (>50% lucro)' : 'Gerenciável';
 
-            // COMPARADOR DE REGIMES TRIBUTÁRIOS & ALERTA DE ENQUADRAMENTO
             const fatAnualEst = receitaBrutaAnual > 0 ? receitaBrutaAnual : (receitaBrutaMensal * 12);
             const meiBadge = document.getElementById('mei-alert-badge');
             const meiBox = document.getElementById('mei-warning-box');
-            
-            if(fatAnualEst > 81000) {
+
+            if (fatAnualEst > 81000) {
                 meiBadge.className = 'text-xs px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 font-semibold border border-rose-200';
                 meiBadge.innerText = '⚠️ Desenquadramento MEI!';
                 meiBox.classList.remove('hidden');
                 meiBox.innerHTML = `⚠️ <strong>Atenção:</strong> Seu faturamento anual estimado (${formatBRL(fatAnualEst)}) ultrapassa o limite legal do MEI (R$ 81.000/ano). É necessário o desenquadramento para o Simples Nacional.`;
-            } else if(fatAnualEst > 70000) {
+            } else if (fatAnualEst > 70000) {
                 meiBadge.className = 'text-xs px-2.5 py-1 rounded-lg bg-amber-50 text-amber-700 font-semibold border border-amber-200';
                 meiBadge.innerText = '⚡ Limite MEI Próximo';
                 meiBox.classList.remove('hidden');
@@ -1613,8 +1649,8 @@
                 meiBox.classList.add('hidden');
             }
 
-            const impMeiAnual = 900; // ~R$ 75/mês
-            const impSimplesAnual = fatAnualEst * (aliquota > 0 ? (aliquota/100) : 0.06);
+            const impMeiAnual = 900;
+            const impSimplesAnual = fatAnualEst * (aliquota > 0 ? (aliquota / 100) : 0.06);
             const impPresumidoAnual = fatAnualEst * 0.1133;
             const impRealAnual = fatAnualEst * 0.1425;
 
@@ -1626,24 +1662,22 @@
                 <tr class="bg-slate-50"><td class="p-2 font-medium">Lucro Real</td><td class="p-2">~14.25%</td><td class="p-2">${formatBRL(impRealAnual)}</td><td class="p-2 text-slate-600">Para Margens Apertadas</td></tr>
             `;
 
-            // CFO Virtual Insights
             const insightEl = document.getElementById('insight-main');
             let auditSummaryText = "";
-            if(receitaBrutaMensal === 0) {
+            if (receitaBrutaMensal === 0) {
                 insightEl.innerText = 'Preencha os dados de faturamento e custos para o CFO Virtual realizar o diagnóstico.';
                 auditSummaryText = 'Nenhum dado financeiro suficiente fornecido para emissão de parecer conclusivo. Recomenda-se o preenchimento completo dos custos operacionais e de precificação.';
-            } else if(resultadoLiquido < 0) {
+            } else if (resultadoLiquido < 0) {
                 insightEl.innerText = `⚠️ Alerta Crítico: Prejuízo mensal de ${formatBRL(Math.abs(resultadoLiquido))}. Custos fixos e ocultos (${formatBRL(custosFixosCompletos)}) superam a Margem de Contribuição. Utilize o simulador de preços ou reduza despesas.`;
-                auditSummaryText = `Alerta Crítico: A empresa opera com prejuízo operacional mensal de ${formatBRL(Math.abs(resultadoLiquido))}. A Margem de Contribuição total de ${formatBRL(mcTotal)} é insuficiente para cobrir a estrutura de custos fixos e ocultos (${formatBRL(custosFixosCompletos)}). Ações corretivas urgentes são necessárias na política de preços ou enxugamento de despesas.`;
-            } else if(margemLiq < 10) {
+                auditSummaryText = `Alerta Crítico: A empresa opera com prejuízo operacional mensal de ${formatBRL(Math.abs(resultadoLiquido))}. A Margem de Contribuição total de ${formatBRL(mcTotal)} é insuficiente para cobrir a estrutura de custos fixos e ocultos (${formatBRL(custosFixosCompletos)}).`;
+            } else if (margemLiq < 10) {
                 insightEl.innerText = `⚠️ Atenção: Margem líquida de ${margemLiq.toFixed(1)}%. O faturamento é bom, mas o lucro final é apertado. Recomendado revisar a precificação reversa e cortar desperdícios mapeados.`;
-                auditSummaryText = `Atenção Executiva: A margem líquida encontra-se em patamar restrito (${margemLiq.toFixed(1)}%). Embora haja geração de caixa positiva, recomenda-se a revisão rigorosa de markup e a eliminação de perdas operacionais no checklist de desperdícios.`;
+                auditSummaryText = `Atenção Executiva: A margem líquida encontra-se em patamar restrito (${margemLiq.toFixed(1)}%). Recomenda-se revisão de markup e eliminação de perdas operacionais.`;
             } else {
                 insightEl.innerText = `🚀 Excelente desempenho! Margem líquida saudável de ${margemLiq.toFixed(1)}% e fôlego de caixa de ${runway} meses. Seu ponto de equilíbrio exige ${beUnid} unidades.`;
-                auditSummaryText = `Desempenho Saudável: A empresa demonstra excelente solidez com margem líquida de ${margemLiq.toFixed(1)}% e fôlego de caixa estimado em ${runway} meses. O ponto de equilíbrio está assegurado em ${beUnid} unidades.`;
+                auditSummaryText = `Desempenho Saudável: A empresa demonstra excelente solidez com margem líquida de ${margemLiq.toFixed(1)}% e fôlego de caixa estimado em ${runway} meses.`;
             }
 
-            // Update Outputs UI
             document.getElementById('pf-total-rec').innerText = formatBRL(totalRecPort);
             document.getElementById('pf-total-cost').innerText = formatBRL(totalCostPort);
             document.getElementById('pf-total-mc').innerText = formatBRL(totalRecPort - totalCostPort);
@@ -1653,7 +1687,7 @@
 
             document.getElementById('out-faturamento').innerText = formatBRL(receitaBrutaMensal);
             document.getElementById('out-volume-lbl').innerText = `${totalVolEval.toLocaleString()} unidades/mês`;
-            
+
             const outLucro = document.getElementById('out-lucro');
             outLucro.innerText = formatBRL(resultadoLiquido);
             outLucro.className = `text-xl font-bold mt-1 ${resultadoLiquido >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
@@ -1675,7 +1709,6 @@
             document.getElementById('dre-esg').innerText = `- ${formatBRL(custosOcultosTotais)}`;
             document.getElementById('dre-resultado').innerText = formatBRL(resultadoLiquido);
 
-            // Populate Executive PDF Template Data
             const empName = document.getElementById('empresa_nome').value.trim() || 'Empresa Não Identificada';
             const empCnpj = document.getElementById('empresa_cnpj').value.trim() || '00.000.000/0001-00';
             document.getElementById('pdf-rep-empresa').innerText = empName;
@@ -1707,11 +1740,11 @@
             const badge = document.getElementById('health-badge');
             const text = document.getElementById('health-text');
             const dot = badge.querySelector('span');
-            if(profit < 0) {
+            if (profit < 0) {
                 badge.className = 'flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold bg-rose-50 border-rose-300 text-rose-700 shadow-sm';
                 dot.className = 'w-2 h-2 rounded-full bg-rose-500 animate-pulse';
                 text.innerText = 'Saúde: Risco Crítico';
-            } else if(margin < 8) {
+            } else if (margin < 8) {
                 badge.className = 'flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold bg-amber-50 border-amber-300 text-amber-700 shadow-sm';
                 dot.className = 'w-2 h-2 rounded-full bg-amber-500 animate-pulse';
                 text.innerText = 'Saúde: Atenção';
@@ -1724,7 +1757,7 @@
 
         function renderSvgChart(curVol, preco, impostosTot, varTot, fixosTot, beUnid) {
             const svg = document.getElementById('svg-chart');
-            if(!svg) return;
+            if (!svg) return;
             svg.innerHTML = '';
             const maxVol = Math.max(curVol * 1.8, beUnid * 1.5, 500);
             const varUnit = (impostosTot + varTot) / (curVol || 1);
@@ -1736,17 +1769,17 @@
             const scaleX = v => pad + (v / maxVol) * (w - 2 * pad);
             const scaleY = val => h - pad - (val / maxY) * (h - 2 * pad);
 
-            for(let i=0; i<=4; i++) {
+            for (let i = 0; i <= 4; i++) {
                 const yVal = (maxY / 4) * i;
                 const yPos = scaleY(yVal);
                 svg.innerHTML += `<line x1="${pad}" y1="${yPos}" x2="${w - pad}" y2="${yPos}" stroke="#334155" stroke-dasharray="3,3" />`;
-                svg.innerHTML += `<text x="${pad - 5}" y="${yPos + 4}" fill="#94a3b8" font-size="9" text-anchor="end">R$ ${(yVal/1000).toFixed(0)}k</text>`;
+                svg.innerHTML += `<text x="${pad - 5}" y="${yPos + 4}" fill="#94a3b8" font-size="9" text-anchor="end">R$ ${(yVal / 1000).toFixed(0)}k</text>`;
             }
 
             svg.innerHTML += `<line x1="${scaleX(0)}" y1="${scaleY(0)}" x2="${scaleX(maxVol)}" y2="${scaleY(maxVol * preco)}" stroke="#10b981" stroke-width="2.5" />`;
             svg.innerHTML += `<line x1="${scaleX(0)}" y1="${scaleY(fixosTot)}" x2="${scaleX(maxVol)}" y2="${scaleY(fixosTot + (maxVol * varUnit))}" stroke="#f43f5e" stroke-width="2.5" />`;
 
-            if(beUnid > 0 && beUnid <= maxVol) {
+            if (beUnid > 0 && beUnid <= maxVol) {
                 const beX = scaleX(beUnid);
                 const beY = scaleY(beUnid * preco);
                 svg.innerHTML += `<circle cx="${beX}" cy="${beY}" r="5" fill="#fbbf24" stroke="#fff" stroke-width="1.5" />`;
@@ -1761,25 +1794,25 @@
         function saveState() {
             try {
                 const state = { portfolio: portfolioProducts, customLosses: customLosses };
-                document.querySelectorAll('input, select').forEach(el => { if(el.id) state[el.id] = el.value; });
+                document.querySelectorAll('input, select').forEach(el => { if (el.id) state[el.id] = el.value; });
                 localStorage.setItem('contaverde_erp_state_v8', JSON.stringify(state));
-            } catch(e) {}
+            } catch (e) {}
         }
 
         function loadState() {
             try {
                 const saved = localStorage.getItem('contaverde_erp_state_v8');
-                if(saved) {
+                if (saved) {
                     const state = JSON.parse(saved);
-                    if(state.portfolio) portfolioProducts = state.portfolio;
-                    if(state.customLosses) customLosses = state.customLosses;
-                    for(let k in state) {
-                        if(k === 'portfolio' || k === 'customLosses') continue;
+                    if (state.portfolio) portfolioProducts = state.portfolio;
+                    if (state.customLosses) customLosses = state.customLosses;
+                    for (let k in state) {
+                        if (k === 'portfolio' || k === 'customLosses') continue;
                         const el = document.getElementById(k);
-                        if(el) el.value = state[k];
+                        if (el) el.value = state[k];
                     }
                 }
-            } catch(e) {}
+            } catch (e) {}
             renderPortfolioTable();
             renderCustomLosses();
             onRegimeChange();
@@ -1792,9 +1825,13 @@
 
         function executeJsonBackupDownload(finalFilename) {
             try {
-                const state = { portfolio: portfolioProducts, customLosses: customLosses };
-                document.querySelectorAll('input, select').forEach(el => { if(el.id) state[el.id] = el.value; });
-                const blob = new Blob([JSON.stringify(state, null, 2)], {type: 'application/json'});
+                const state = {
+                    portfolio: portfolioProducts,
+                    customLosses: customLosses,
+                    savedSkus: getSavedSkus()
+                };
+                document.querySelectorAll('input, select').forEach(el => { if (el.id) state[el.id] = el.value; });
+                const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
@@ -1802,7 +1839,7 @@
                 a.click();
                 URL.revokeObjectURL(url);
                 showToast(`Backup JSON "${finalFilename}" exportado!`);
-            } catch(e) { showToast('Erro ao exportar JSON', 'error'); }
+            } catch (e) { showToast('Erro ao exportar JSON', 'error'); }
         }
 
         function triggerRestore() {
@@ -1811,24 +1848,66 @@
             input.accept = '.json';
             input.onchange = e => {
                 const file = e.target.files[0];
-                if(!file) return;
+                if (!file) return;
                 const reader = new FileReader();
                 reader.onload = ev => {
                     try {
                         const state = JSON.parse(ev.target.result);
-                        if(state.portfolio) portfolioProducts = state.portfolio;
-                        if(state.customLosses) customLosses = state.customLosses;
-                        for(let k in state) {
-                            if(k === 'portfolio' || k === 'customLosses') continue;
-                            const el = document.getElementById(k);
-                            if(el) el.value = state[k];
+                        if (Array.isArray(state.portfolio)) {
+                            portfolioProducts = state.portfolio.map(p => ({
+                                name: (p && p.name) ? String(p.name) : 'Produto Restaurado',
+                                preco: Number(p && p.preco) || 0,
+                                qtd: Number(p && p.qtd) || 0,
+                                custoVar: Number(p && p.custoVar) || 0
+                            }));
                         }
+                        if (Array.isArray(state.customLosses)) {
+                            customLosses = state.customLosses.map((l, i) => ({
+                                id: (l && l.id) ? String(l.id) : ('custom_loss_restored_' + Date.now() + '_' + i),
+                                name: (l && l.name) ? String(l.name) : 'Perda Restaurada',
+                                pct: Number(l && l.pct) || 0,
+                                checked: l && l.checked !== undefined ? Boolean(l.checked) : true
+                            }));
+                        }
+                        for (let k in state) {
+                            if (k === 'portfolio' || k === 'customLosses' || k === 'savedSkus') continue;
+                            const el = document.getElementById(k);
+                            if (el) el.value = state[k];
+                        }
+                        let restoredSkus = Array.isArray(state.savedSkus) ? [...state.savedSkus] : getSavedSkus();
+                        if (Array.isArray(state.portfolio)) {
+                            state.portfolio.forEach(p => {
+                                if (!p || !p.name) return;
+                                const existingIdx = restoredSkus.findIndex(s => s.name.toLowerCase() === p.name.toLowerCase());
+                                const syncedSku = {
+                                    name: p.name,
+                                    preco_venda: parseFloat(p.preco) || 0,
+                                    volume: parseInt(p.qtd) || 0,
+                                    custo_aquisicao: parseFloat(p.custoVar) || 0,
+                                    embalagem: 0,
+                                    frete_unitario: 0,
+                                    comissao: 0
+                                };
+                                if (existingIdx >= 0) {
+                                    restoredSkus[existingIdx] = {
+                                        ...restoredSkus[existingIdx],
+                                        preco_venda: syncedSku.preco_venda,
+                                        volume: syncedSku.volume
+                                    };
+                                } else {
+                                    restoredSkus.push(syncedSku);
+                                }
+                            });
+                        }
+                        saveSkusList(restoredSkus);
+
+                        showScreen('erp');
                         renderPortfolioTable();
                         renderCustomLosses();
                         onRegimeChange();
                         calculate();
-                        showToast('Dados restaurados!');
-                    } catch(err) { showToast('Erro ao ler arquivo', 'error'); }
+                        showToast('Dados e SKUs restaurados com sucesso!');
+                    } catch (err) { showToast('Erro ao ler arquivo', 'error'); }
                 };
                 reader.readAsText(file);
             };
@@ -1840,7 +1919,7 @@
         }
 
         function executeExcelExportDownload(finalFilename) {
-            if(typeof XLSX === 'undefined') { showToast('SheetJS indisponível', 'error'); return; }
+            if (typeof XLSX === 'undefined') { showToast('SheetJS indisponível', 'error'); return; }
             const wb = XLSX.utils.book_new();
             const data = [
                 ["ContaVerde ERP Pro v8.6 - Relatório Gerencial"],
@@ -1861,29 +1940,96 @@
             openExportFilenameModal('pdf');
         }
 
-        function executePdfReportDownload(finalFilename) {
-            if(typeof html2pdf === 'undefined') { showToast('html2pdf indisponível', 'error'); return; }
-            showToast('Gerando relatório PDF Executivo Formal...', 'info');
-            
-            const repElement = document.getElementById('executive-pdf-report');
-            if(!repElement) return;
-            
-            // Temporarily make the executive report container visible for html2pdf capture
-            repElement.style.display = 'block';
+        let isPdfExportRunning = false;
 
-            html2pdf().from(repElement).set({
-                margin: 10,
-                filename: finalFilename,
-                image: {type: 'jpeg', quality: 0.98},
-                html2canvas: {scale: 2, useCORS: true},
-                jsPDF: {unit: 'mm', format: 'a4', orientation: 'portrait'}
-            }).save().then(() => {
-                repElement.style.display = 'none';
-                showToast(`PDF "${finalFilename}" baixado com sucesso!`);
+        function executePdfReportDownload(finalFilename) {
+            if (typeof html2pdf === 'undefined') { showToast('html2pdf indisponível', 'error'); return; }
+            if (isPdfExportRunning) {
+                showToast('Aguarde a finalização do PDF atual...', 'info');
+                return;
+            }
+            isPdfExportRunning = true;
+            showToast('Gerando relatório PDF Executivo Formal...', 'info');
+
+            calculate();
+
+            const repElement = document.getElementById('executive-pdf-report');
+            if (!repElement) {
+                isPdfExportRunning = false;
+                return;
+            }
+
+            // Renderiza em (0, 0) com largura de 718px sob cortina branca temporária
+            // evitando corte lateral e deslocamento no html2canvas
+            const cover = document.createElement('div');
+            cover.style.position = 'fixed';
+            cover.style.inset = '0';
+            cover.style.background = '#ffffff';
+            cover.style.zIndex = '48';
+            cover.style.pointerEvents = 'none';
+
+            const wrapper = document.createElement('div');
+            wrapper.style.position = 'fixed';
+            wrapper.style.left = '0';
+            wrapper.style.top = '0';
+            wrapper.style.width = '718px';
+            wrapper.style.background = '#ffffff';
+            wrapper.style.zIndex = '47';
+            wrapper.style.pointerEvents = 'none';
+            wrapper.style.overflow = 'visible';
+
+            const clonedReport = repElement.cloneNode(true);
+            clonedReport.removeAttribute('id');
+            clonedReport.classList.remove('print-only');
+            clonedReport.classList.remove('p-10', 'max-w-[210mm]', 'mx-auto');
+            clonedReport.style.display = 'block';
+            clonedReport.style.width = '718px';
+            clonedReport.style.maxWidth = '718px';
+            clonedReport.style.padding = '24px';
+            clonedReport.style.margin = '0';
+            clonedReport.style.boxSizing = 'border-box';
+            clonedReport.style.backgroundColor = '#ffffff';
+
+            wrapper.appendChild(clonedReport);
+            document.body.appendChild(wrapper);
+            document.body.appendChild(cover);
+
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    html2pdf().from(clonedReport).set({
+                        margin: [10, 10, 10, 10],
+                        filename: finalFilename,
+                        image: { type: 'jpeg', quality: 0.98 },
+                        html2canvas: {
+                            scale: 2,
+                            useCORS: true,
+                            x: 0,
+                            y: 0,
+                            width: 718,
+                            scrollX: 0,
+                            scrollY: 0,
+                            windowWidth: 718,
+                            backgroundColor: '#ffffff'
+                        },
+                        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                    }).save().then(() => {
+                        showToast(`PDF "${finalFilename}" baixado com sucesso!`);
+                    }).catch(() => {
+                        showToast('Erro ao gerar o arquivo PDF.', 'error');
+                    }).finally(() => {
+                        wrapper.querySelectorAll('canvas').forEach(c => {
+                            c.width = 0;
+                            c.height = 0;
+                        });
+                        wrapper.remove();
+                        cover.remove();
+                        isPdfExportRunning = false;
+                    });
+                });
             });
         }
 
-        window.onload = function() {
+        window.onload = function () {
             initPitchCarousel();
             loadState();
         };
