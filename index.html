@@ -1,0 +1,1892 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ContaVerde ERP Pro v8.6 - Controladoria, Tributos, ESG & CFO Virtual</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SheetJS (xlsx) for professional Excel export -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- html2pdf.js for functional PDF reports -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        corporate: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                            950: '#172554',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; color: #1e293b; overflow-x: hidden; }
+        @media print {
+            body { background: white !important; color: black !important; }
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            .card-print { border: 1px solid #cbd5e1 !important; background: white !important; color: black !important; box-shadow: none !important; }
+        }
+        .print-only { display: none; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #e2e8f0; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0px) scale(1); }
+            50% { transform: translateY(-8px) scale(1.03); }
+        }
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.8; filter: drop-shadow(0 0 12px rgba(34, 197, 94, 0.5)); }
+            50% { opacity: 1; filter: drop-shadow(0 0 28px rgba(34, 197, 94, 0.9)); }
+        }
+        @keyframes fadeInScale {
+            0% { opacity: 0; transform: scale(0.92) translateY(15px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        @keyframes cinematicZoom {
+            0% { opacity: 0; transform: scale(0.85); filter: blur(8px); }
+            50% { opacity: 1; transform: scale(1.02); filter: blur(0px); }
+            100% { opacity: 1; transform: scale(1); filter: blur(0px); }
+        }
+        @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(1000%); }
+        }
+
+        .animate-logo-float { animation: floatSlow 4s ease-in-out infinite; }
+        .animate-leaf-glow { animation: pulseGlow 3s ease-in-out infinite; }
+        .animate-welcome { animation: fadeInScale 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .animate-cinematic { animation: cinematicZoom 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .scan-beam {
+            position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            background: linear-gradient(90deg, transparent, rgba(34, 197, 94, 0.8), transparent);
+            animation: scanline 2.5s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-blue-600 selection:text-white">
+
+    <!-- Toast Notification System -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 no-print"></div>
+
+    <!-- Custom Modal for SKUs -->
+    <div id="custom-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
+        <div class="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <h3 id="modal-title" class="text-xl font-bold text-blue-900 mb-2">Gerenciador de SKUs</h3>
+            <p id="modal-desc" class="text-slate-600 text-sm mb-4">Selecione um produto salvo:</p>
+            <div id="modal-body" class="mb-6"></div>
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="confirmAddCustomLoss()" class="px-4 py-2 bg-blue-900 hover:bg-blue-800 text-white rounded-xl font-semibold transition">Adicionar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Pre-Export Filename Modal (PDF, Excel & JSON Backup) -->
+    <div id="export-filename-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
+        <div class="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-lg shadow-2xl">
+            <div class="flex items-center justify-between mb-2">
+                <h3 id="export-modal-title" class="text-xl font-bold text-blue-950">Personalizar Nome do Arquivo</h3>
+                <span id="export-modal-badge" class="text-xs px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold">Chave Aleatória</span>
+            </div>
+            <p id="export-modal-desc" class="text-slate-600 text-xs mb-4">
+                Geramos um nome automático com o nome da empresa, tipo de arquivo, data e uma chave de 4 dígitos para evitar arquivos duplicados. Você pode editar livremente antes de baixar:
+            </p>
+            <div class="space-y-4 mb-6">
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label for="export_filename_input" class="block text-xs font-semibold text-slate-700">Nome do Arquivo para Download</label>
+                        <button type="button" onclick="regenerateExportRandomKey()" class="text-xs font-semibold text-blue-800 hover:text-blue-600 underline cursor-pointer">
+                            🎲 Nova Chave (4 dígitos)
+                        </button>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input type="text" id="export_filename_input" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none focus:border-blue-600 text-slate-900">
+                        <span id="export_filename_ext" class="px-3 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 select-none">.pdf</span>
+                    </div>
+                    <p id="export-modal-preview" class="text-[11px] text-slate-500 mt-1.5">Arquivo final: ...</p>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="closeExportFilenameModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-medium text-sm transition">Cancelar</button>
+                <button type="button" id="confirm-export-download-btn" onclick="confirmExportDownload()" class="px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl font-semibold text-sm shadow transition">
+                    Confirmar e Baixar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 1. PITCH PRESENTATION / ONBOARDING SCREEN -->
+    <div id="pitch-screen" class="fixed inset-0 bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 z-50 flex flex-col items-center justify-center p-6 text-white text-center">
+        <div class="max-w-3xl mx-auto space-y-6 animate-welcome">
+            <div class="w-24 h-24 rounded-3xl bg-blue-800/80 border border-emerald-500/50 flex items-center justify-center shadow-2xl mx-auto backdrop-blur-md p-4 animate-logo-float">
+                <svg viewBox="0 0 100 100" class="w-full h-full animate-leaf-glow">
+                    <path d="M20 70 C 10 50, 20 20, 50 20 C 50 50, 30 80, 20 70 Z" fill="#22c55e" opacity="0.85"/>
+                    <path d="M80 70 C 90 50, 80 20, 50 20 C 50 50, 70 80, 80 70 Z" fill="#16a34a" opacity="0.95"/>
+                    <rect x="30" y="30" width="40" height="50" rx="8" fill="#15803d" stroke="#86efac" stroke-width="2"/>
+                    <text x="50" y="55" font-size="12" font-weight="bold" fill="#dcfce7" text-anchor="middle">v8.6</text>
+                </svg>
+            </div>
+            <div class="space-y-3">
+                <span class="text-xs px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold uppercase tracking-widest">Plataforma de Controladoria & Inteligência Financeira</span>
+                <h1 class="text-3xl md:text-5xl font-extrabold tracking-tight text-white drop-shadow">ContaVerde ERP Pro</h1>
+                <p class="text-sm md:text-base text-slate-300 max-w-xl mx-auto leading-relaxed">
+                    Domine a saúde financeira da sua empresa com controladoria multi-SKU, simulação tributária automatizada para 27 estados, auditoria por IA (CFO Virtual) e relatórios executivos auditados.
+                </p>
+            </div>
+            
+            <!-- Dynamic Feature Carousel Box -->
+            <div id="pitch-carousel-box" class="p-4 bg-blue-900/50 border border-emerald-500/40 rounded-2xl backdrop-blur max-w-lg mx-auto transition-all duration-500 shadow-xl">
+                <div class="flex items-center justify-center gap-2 mb-1">
+                    <span id="carousel-icon" class="text-lg">🔮</span>
+                    <h3 id="carousel-title" class="font-bold text-emerald-400 text-sm">Simulador Estratégico "E Se"</h3>
+                </div>
+                <p id="carousel-desc" class="text-slate-200 text-xs">Simule variações percentuais em preço, volume e custos fixos visualizando o impacto imediato no lucro líquido.</p>
+                <div class="flex justify-center gap-1.5 mt-3">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 indicator-dot" data-index="0"></span>
+                    <span class="w-2 h-2 rounded-full bg-slate-600 indicator-dot" data-index="1"></span>
+                    <span class="w-2 h-2 rounded-full bg-slate-600 indicator-dot" data-index="2"></span>
+                    <span class="w-2 h-2 rounded-full bg-slate-600 indicator-dot" data-index="3"></span>
+                </div>
+            </div>
+
+            <div class="pt-2">
+                <button type="button" onclick="proceedToVinheta()" class="px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-bold text-base shadow-2xl transition transform hover:scale-105 border border-emerald-400 animate-pulse">
+                    Iniciar Experiência do Sistema ▶
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. CINEMATIC VINHETA -->
+    <div id="cinematic-vinheta" class="fixed inset-0 bg-slate-950 z-50 hidden flex flex-col items-center justify-center p-6 text-white text-center overflow-hidden transition-all duration-700">
+        <div class="scan-beam"></div>
+        <div class="max-w-xl mx-auto space-y-6 animate-cinematic relative z-10">
+            <div class="w-32 h-32 rounded-3xl bg-blue-900/60 border border-emerald-500/40 flex items-center justify-center shadow-2xl mx-auto backdrop-blur-xl p-5 animate-logo-float">
+                <svg viewBox="0 0 100 100" class="w-full h-full animate-leaf-glow">
+                    <path d="M20 70 C 10 50, 20 20, 50 20 C 50 50, 30 80, 20 70 Z" fill="#22c55e" opacity="0.85"/>
+                    <path d="M80 70 C 90 50, 80 20, 50 20 C 50 50, 70 80, 80 70 Z" fill="#16a34a" opacity="0.95"/>
+                    <rect x="30" y="30" width="40" height="50" rx="8" fill="#15803d" stroke="#86efac" stroke-width="2"/>
+                    <rect x="35" y="36" width="30" height="12" rx="3" fill="#dcfce7"/>
+                    <text x="50" y="44" font-size="7" font-weight="bold" fill="#166534" text-anchor="middle">ERP PRO</text>
+                    <circle cx="42" cy="56" r="3" fill="#86efac"/><circle cx="50" cy="56" r="3" fill="#86efac"/><circle cx="58" cy="56" r="3" fill="#86efac"/>
+                    <circle cx="42" cy="66" r="3" fill="#86efac"/><circle cx="50" cy="66" r="3" fill="#86efac"/><circle cx="58" cy="66" r="3" fill="#86efac"/>
+                </svg>
+            </div>
+            <div class="space-y-2">
+                <h2 class="text-3xl md:text-4xl font-extrabold tracking-tight text-white">ContaVerde ERP Pro v8.6</h2>
+                <p class="text-sm md:text-base text-emerald-400 font-medium tracking-wide uppercase">Carregando Controladoria Multi-SKU & IA...</p>
+            </div>
+            <div class="w-48 h-1.5 bg-slate-800 rounded-full mx-auto overflow-hidden">
+                <div id="vinheta-progress" class="w-full h-full bg-gradient-to-r from-emerald-500 to-blue-500 transition-all duration-1000 transform -translate-x-full"></div>
+            </div>
+            <div class="pt-2">
+                <button type="button" onclick="dismissVinheta()" class="px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-sm shadow-xl transition transform hover:scale-105 border border-emerald-400">
+                    Entrar no Sistema ▶
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. WELCOME SCREEN -->
+    <div id="welcome-screen" class="fixed inset-0 bg-gradient-to-br from-blue-950 via-blue-900 to-slate-950 z-40 hidden flex flex-col items-center justify-center p-6 text-white text-center">
+        <div class="max-w-2xl mx-auto space-y-6 animate-welcome">
+            <div class="w-28 h-28 rounded-3xl bg-blue-800/80 border border-blue-600/50 flex items-center justify-center shadow-2xl mx-auto backdrop-blur-md p-4 animate-logo-float">
+                <svg viewBox="0 0 100 100" class="w-full h-full animate-leaf-glow">
+                    <path d="M20 70 C 10 50, 20 20, 50 20 C 50 50, 30 80, 20 70 Z" fill="#22c55e" opacity="0.85"/>
+                    <path d="M80 70 C 90 50, 80 20, 50 20 C 50 50, 70 80, 80 70 Z" fill="#16a34a" opacity="0.95"/>
+                    <rect x="30" y="30" width="40" height="50" rx="8" fill="#15803d" stroke="#86efac" stroke-width="2"/>
+                    <rect x="35" y="36" width="30" height="12" rx="3" fill="#dcfce7"/>
+                    <text x="50" y="44" font-size="7" font-weight="bold" fill="#166534" text-anchor="middle">v8.6</text>
+                    <circle cx="42" cy="56" r="3" fill="#86efac"/><circle cx="50" cy="56" r="3" fill="#86efac"/><circle cx="58" cy="56" r="3" fill="#86efac"/>
+                    <circle cx="42" cy="66" r="3" fill="#86efac"/><circle cx="50" cy="66" r="3" fill="#86efac"/><circle cx="58" cy="66" r="3" fill="#86efac"/>
+                </svg>
+            </div>
+            <div class="space-y-2">
+                <h1 class="text-3xl md:text-5xl font-extrabold tracking-tight text-white drop-shadow">ContaVerde ERP Pro</h1>
+                <p class="text-lg md:text-xl text-emerald-400 font-semibold">Sistema de Controladoria, Multi-SKU & IA</p>
+            </div>
+            <p class="text-sm text-slate-300 max-w-md mx-auto">
+                Selecione o modo de operação para iniciar sua análise financeira profissional:
+            </p>
+            <div class="pt-4 space-y-3">
+                <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+                    <button type="button" onclick="openCalculatorWithMode('simple')" class="px-6 py-3 bg-blue-800 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm shadow transition border border-blue-700">
+                        Modo Simples
+                    </button>
+                    <button type="button" onclick="openCalculatorWithMode('full')" class="px-6 py-3 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl font-semibold text-sm shadow transition border border-emerald-600">
+                        Modo Avançado (CFO & IA)
+                    </button>
+                </div>
+            </div>
+            <div class="pt-12 text-xs text-blue-300 font-medium tracking-wide uppercase">
+                Controladoria &bull; Multi-SKU & IA
+            </div>
+        </div>
+    </div>
+
+    <!-- ERP WRAPPER -->
+    <div id="erp-wrapper" class="hidden flex flex-col min-h-screen">
+        <!-- HEADER -->
+        <header class="bg-blue-900 text-white border-b border-blue-950 sticky top-0 z-40 no-print shadow-md">
+            <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <button type="button" onclick="returnToWelcome()" class="w-10 h-10 rounded-xl bg-blue-800 hover:bg-blue-700 border border-blue-700 flex items-center justify-center text-white font-bold text-lg shadow transition" title="Voltar à Tela Inicial">🏠</button>
+                    <div class="w-10 h-10 rounded-xl bg-blue-800 border border-blue-700 flex items-center justify-center text-white shadow p-1 animate-logo-float">
+                        <svg viewBox="0 0 100 100" class="w-full h-full">
+                            <path d="M20 70 C 10 50, 20 20, 50 20 C 50 50, 30 80, 20 70 Z" fill="#22c55e" opacity="0.85"/>
+                            <path d="M80 70 C 90 50, 80 20, 50 20 C 50 50, 70 80, 80 70 Z" fill="#16a34a" opacity="0.95"/>
+                            <rect x="30" y="30" width="40" height="50" rx="8" fill="#15803d" stroke="#86efac" stroke-width="2"/>
+                            <text x="50" y="55" font-size="12" font-weight="bold" fill="#dcfce7" text-anchor="middle">v8.6</text>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg tracking-tight text-white flex items-center gap-2">
+                            ContaVerde ERP Pro
+                            <span class="text-xs px-2 py-0.5 rounded-full bg-blue-800 text-blue-200 border border-blue-700">v8.6 Controladoria & IA</span>
+                        </h1>
+                        <p class="text-xs text-blue-200">Controladoria, Tributos Avançados & CFO Virtual</p>
+                    </div>
+                </div>
+
+                <!-- Health Badge & Mode -->
+                <div class="flex items-center gap-3">
+                    <div id="health-badge" class="flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold bg-emerald-50 border-emerald-300 text-emerald-700 transition-all duration-300 shadow-sm">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span id="health-text">Saúde: Saudável</span>
+                    </div>
+
+                    <div class="flex bg-blue-950 p-1 rounded-xl border border-blue-800 text-xs">
+                        <button type="button" onclick="setMode('full')" id="btn-mode-full" class="px-3 py-1.5 rounded-lg font-medium transition bg-blue-700 text-white shadow">Modo Avançado</button>
+                        <button type="button" onclick="setMode('simple')" id="btn-mode-simple" class="px-3 py-1.5 rounded-lg font-medium transition text-blue-200 hover:text-white">Modo Simples</button>
+                    </div>
+                </div>
+
+                <!-- Action Toolbar -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <button type="button" onclick="openSkuManager()" class="px-3 py-2 bg-blue-800 hover:bg-blue-700 text-white rounded-xl text-xs font-medium border border-blue-700 flex items-center gap-1.5 transition shadow-sm">📦 SKUs</button>
+                    <button type="button" onclick="saveCurrentSku()" class="px-3 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-xs font-medium flex items-center gap-1.5 transition shadow-sm">💾 Salvar SKU</button>
+                    <button type="button" onclick="generateReport()" class="px-3 py-2 bg-blue-800 hover:bg-blue-700 text-white rounded-xl text-xs font-medium border border-blue-700 flex items-center gap-1.5 transition shadow-sm">🖨️ PDF Executivo</button>
+                    <button type="button" onclick="exportExcel()" class="px-3 py-2 bg-blue-800 hover:bg-blue-700 text-white rounded-xl text-xs font-medium border border-blue-700 flex items-center gap-1.5 transition shadow-sm">📊 Baixar Excel</button>
+                    <button type="button" onclick="backupJSON()" class="px-3 py-2 bg-blue-800 hover:bg-blue-700 text-white rounded-xl text-xs font-medium border border-blue-700 flex items-center gap-1.5 transition shadow-sm">💾 Backup JSON</button>
+                    <button type="button" onclick="triggerRestore()" class="px-3 py-2 bg-blue-800 hover:bg-blue-700 text-white rounded-xl text-xs font-medium border border-blue-700 flex items-center gap-1.5 transition shadow-sm">📂 Restaurar</button>
+                    <button type="button" onclick="clearAll()" class="px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-medium transition flex items-center gap-1.5 shadow">🗑️ Limpar</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN GRID -->
+        <main id="pdf-content" class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-6 bg-slate-50">
+
+            <!-- LEFT COLUMN (7 cols) -->
+            <div class="lg:col-span-7 space-y-6">
+
+                <!-- CFO Virtual Insights -->
+                <div class="bg-gradient-to-r from-blue-900 to-indigo-900 text-white rounded-2xl p-5 shadow-lg border border-blue-800">
+                    <h2 class="text-sm font-bold uppercase tracking-wider text-blue-200 mb-2 flex items-center gap-2">
+                        🤖 CFO Virtual de Bolso (Auditor Inteligente v8.6)
+                    </h2>
+                    <p class="text-xs text-blue-100 mb-3">Diagnóstico contábil automatizado em tempo real:</p>
+                    <div id="cfo-virtual-insights" class="space-y-2 text-xs bg-blue-950/70 p-3.5 rounded-xl border border-blue-800">
+                        <div class="flex items-start gap-2">
+                            <span>🔍</span>
+                            <span id="insight-main">Aguardando dados para auditoria financeira...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 1. Identificação da Empresa -->
+                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                    <h2 class="text-sm font-bold uppercase tracking-wider text-blue-950 mb-4 flex items-center gap-2">
+                        🏢 Identificação da Empresa
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Nome da Empresa / Razão Social</label>
+                            <input type="text" id="empresa_nome" value="" placeholder="Ex: Minha Empresa Ltda" oninput="calculate()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-600 text-slate-800">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">CNPJ</label>
+                            <input type="text" id="empresa_cnpj" value="" placeholder="00.000.000/0001-00" oninput="calculate()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-600 text-slate-800">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 1.2. Cadastro do Produto / SKU Principal -->
+                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                    <h2 class="text-sm font-bold uppercase tracking-wider text-blue-950 mb-4 flex items-center gap-2">
+                        📦 Cadastro do Produto / SKU Principal
+                    </h2>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 mb-1">Nome do Produto / SKU Principal</label>
+                        <input type="text" id="sku_nome" value="" placeholder="Ex: Produto Principal" oninput="calculate()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-600 text-slate-800 font-semibold">
+                    </div>
+                </div>
+
+                <!-- MODULE: Simulador Estratégico "E Se" (What-If Analysis) -->
+                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                    <div class="flex items-center justify-between mb-3">
+                        <h2 class="text-sm font-bold uppercase tracking-wider text-blue-950 flex items-center gap-2">
+                            🔮 Simulador Estratégico "E Se" (What-If Analysis)
+                        </h2>
+                        <span class="text-xs text-slate-500">Cenários Dinâmicos</span>
+                    </div>
+                    <p class="text-xs text-slate-500 mb-3">Simule ajustes percentuais rápidos para testar o impacto imediato no lucro líquido da empresa:</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Variação Preço de Venda (%)</label>
+                            <input type="number" id="whatif_preco_pct" value="0" step="1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-600 text-slate-800 font-semibold">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Variação Volume de Vendas (%)</label>
+                            <input type="number" id="whatif_vol_pct" value="0" step="1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-600 text-slate-800 font-semibold">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Redução Custos Fixos (%)</label>
+                            <input type="number" id="whatif_custofixo_pct" value="0" step="1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-600 text-slate-800 font-semibold">
+                        </div>
+                    </div>
+                    <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 grid grid-cols-2 gap-3 text-center text-xs">
+                        <div>
+                            <span class="text-slate-500 block text-[10px]">Novo Faturamento ("E Se")</span>
+                            <span id="whatif-fat-out" class="font-bold text-blue-900 text-sm">R$ 0,00</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 block text-[10px]">Novo Lucro Líquido ("E Se")</span>
+                            <span id="whatif-lucro-out" class="font-bold text-emerald-600 text-sm">R$ 0,00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MODULE 1: Comparador Automático de Regimes Tributários & Alerta MEI -->
+                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                    <div class="flex items-center justify-between mb-3">
+                        <h2 class="text-sm font-bold uppercase tracking-wider text-blue-950 flex items-center gap-2">
+                            ⚖️ Comparador de Regimes & Alerta de Enquadramento
+                        </h2>
+                        <span id="mei-alert-badge" class="text-xs px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200">Enquadramento OK</span>
+                    </div>
+                    <p class="text-xs text-slate-500 mb-4">Compara o imposto anual estimado considerando o faturamento anual bruto projetado (baseado nas vendas e sazonalidade):</p>
+                    
+                    <div id="mei-warning-box" class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900 hidden">
+                        <!-- Injetado via JS -->
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead>
+                                <tr class="bg-slate-100 text-slate-700 uppercase tracking-wider border-b border-slate-200">
+                                    <th class="p-2.5">Regime Tributário</th>
+                                    <th class="p-2.5">Alíquota Média Estimada</th>
+                                    <th class="p-2.5">Imposto Anual Estimado</th>
+                                    <th class="p-2.5">Viabilidade</th>
+                                </tr>
+                            </thead>
+                            <tbody id="regimes-comparison-tbody" class="divide-y divide-slate-100">
+                                <!-- Injetado via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- MODULE 2: Precificação Reversa por Margem Desejada (Markup Automático) -->
+                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                    <div class="flex items-center justify-between mb-3">
+                        <h2 class="text-sm font-bold uppercase tracking-wider text-blue-950 flex items-center gap-2">
+                            🎯 Precificação Reversa por Margem de Lucro Desejada
+                        </h2>
+                        <span class="text-xs text-slate-500">Markup com impostos inclusos</span>
+                    </div>
+                    <p class="text-xs text-slate-500 mb-3">Defina a margem de lucro líquido desejada para o produto e descubra o preço de venda exato:</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Margem Líquida Desejada (%)</label>
+                            <input type="number" id="target_margin" value="20" step="1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-600 text-blue-900 font-semibold">
+                        </div>
+                        <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 text-center">
+                            <span class="text-[11px] text-slate-500 block">Preço de Venda Sugerido</span>
+                            <span id="suggested-price-out" class="text-base font-bold text-blue-950">R$ 0,00</span>
+                        </div>
+                        <div>
+                            <button type="button" onclick="applySuggestedPrice()" class="w-full py-2.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-bold transition shadow-sm">
+                                ⚡ Aplicar Preço Sugerido
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MODULE 3: Simulador de Refis e Parcelamento de Dívidas -->
+                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                    <h2 class="text-sm font-bold uppercase tracking-wider text-blue-950 mb-3 flex items-center justify-between">
+                        <span>💳 Simulador de Refis & Parcelamento de Dívidas Fiscais</span>
+                        <span class="text-xs text-slate-500">Selic / Juros oficiais</span>
+                    </h2>
+                    <p class="text-xs text-slate-500 mb-3">Simule o parcelamento de débitos tributários acumulados em até 60 meses:</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Valor Total da Dívida Acumulada (R$)</label>
+                            <input type="number" id="refis_divida" value="0" step="100" oninput="calculate()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-600 text-slate-800">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Quantidade de Parcelas</label>
+                            <select id="refis_parcelas" onchange="calculate()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-600 text-slate-800">
+                                <option value="12">12 Parcelas (Desconto de Multas)</option>
+                                <option value="24">24 Parcelas</option>
+                                <option value="36">36 Parcelas</option>
+                                <option value="60" selected>60 Parcelas (Refis Padrão)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 grid grid-cols-3 gap-2 text-center text-xs">
+                        <div>
+                            <span class="text-slate-500 block text-[10px]">Valor da Parcela</span>
+                            <span id="refis-parcela-out" class="font-bold text-blue-900 text-sm">R$ 0,00</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 block text-[10px]">Total com Juros</span>
+                            <span id="refis-total-out" class="font-bold text-slate-800 text-sm">R$ 0,00</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 block text-[10px]">Impacto no Caixa Mensal</span>
+                            <span id="refis-impact-out" class="font-bold text-rose-600 text-sm">Seguro</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MODULE 4: Checklist Guiado de Custos Ocultos e Perdas -->
+                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                    <h2 class="text-sm font-bold uppercase tracking-wider text-blue-950 mb-3 flex items-center justify-between">
+                        <span>📋 Checklist Guiado de Custos Ocultos & Desperdícios</span>
+                        <div class="flex items-center gap-2">
+                            <button type="button" onclick="openAddCustomLossModal()" class="px-2.5 py-1 bg-blue-900 hover:bg-blue-800 text-white rounded-lg text-xs font-semibold transition shadow-sm">+ Adicionar Perda Personalizada</button>
+                            <span class="text-xs text-slate-500">Mapeamento de perdas</span>
+                        </div>
+                    </h2>
+                    <p class="text-xs text-slate-500 mb-3">Marque os gargalos operacionais para estimar o vazamento mensal de lucro:</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                        <label class="flex items-center gap-2 p-2.5 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 cursor-pointer">
+                            <input type="checkbox" id="check_perdas_estoque" onchange="calculate()" class="rounded text-blue-900 accent-blue-900">
+                            <span>Mercadorias vencidas ou avariadas no estoque</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2.5 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 cursor-pointer">
+                            <input type="checkbox" id="check_retrabalho" onchange="calculate()" class="rounded text-blue-900 accent-blue-900">
+                            <span>Erros operacionais e retrabalho logístico</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2.5 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 cursor-pointer">
+                            <input type="checkbox" id="check_taxas_cartao" onchange="calculate()" class="rounded text-blue-900 accent-blue-900">
+                            <span>Taxas de maquininha não repassadas corretamente</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2.5 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 cursor-pointer">
+                            <input type="checkbox" id="check_inadimplencia" onchange="calculate()" class="rounded text-blue-900 accent-blue-900">
+                            <span>Inadimplência de clientes fiados ou boletos</span>
+                        </label>
+                    </div>
+                    <!-- Container for custom losses -->
+                    <div id="custom-losses-container" class="mt-2 space-y-2 text-xs"></div>
+                    <div class="mt-3 text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 p-2.5 rounded-xl flex items-center justify-between">
+                        <span>Estimativa de Desperdício Mensal Identificado:</span>
+                        <span id="checklist-perda-out">R$ 0,00</span>
+                    </div>
+                </div>
+
+                <!-- MODULE 5: Projeção de Fluxo de Caixa Sazonal (12 Meses) -->
+                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                    <h2 class="text-sm font-bold uppercase tracking-wider text-blue-950 mb-3 flex items-center justify-between">
+                        <span>📅 Projeção de Sazonalidade Anual (12 Meses)</span>
+                        <span class="text-xs text-slate-500">Picos e Baixas</span>
+                    </h2>
+                    <p class="text-xs text-slate-500 mb-3">Fator multiplicador de vendas por mês (1.0 = Média normal, 1.5 = Pico de vendas, 0.7 = Baixa temporada):</p>
+                    <div class="grid grid-cols-4 sm:grid-cols-6 gap-2 text-xs">
+                        <div>
+                            <label class="block text-[10px] text-slate-500 font-medium">Jan</label>
+                            <input type="number" id="saz_1" value="1.0" step="0.1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-center">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-500 font-medium">Fev</label>
+                            <input type="number" id="saz_2" value="1.0" step="0.1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-center">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-500 font-medium">Mar</label>
+                            <input type="number" id="saz_3" value="1.0" step="0.1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-center">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-500 font-medium">Abr</label>
+                            <input type="number" id="saz_4" value="1.0" step="0.1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-center">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-500 font-medium">Mai</label>
+                            <input type="number" id="saz_5" value="1.0" step="0.1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-center">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-500 font-medium">Jun</label>
+                            <input type="number" id="saz_6" value="1.0" step="0.1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-center">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-500 font-medium">Jul</label>
+                            <input type="number" id="saz_7" value="1.0" step="0.1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-center">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-500 font-medium">Ago</label>
+                            <input type="number" id="saz_8" value="1.0" step="0.1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-center">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-500 font-medium">Set</label>
+                            <input type="number" id="saz_9" value="1.0" step="0.1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-center">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-500 font-medium">Out</label>
+                            <input type="number" id="saz_10" value="1.0" step="0.1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-center">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-500 font-medium">Nov</label>
+                            <input type="number" id="saz_11" value="1.2" step="0.1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-center">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-500 font-medium">Dez</label>
+                            <input type="number" id="saz_12" value="1.5" step="0.1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-center">
+                        </div>
+                    </div>
+                    <div class="mt-3 text-xs text-slate-600 flex justify-between items-center bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                        <span>Faturamento Anual Projetado com Sazonalidade:</span>
+                        <span id="sazonal-total-out" class="font-bold text-blue-900">R$ 0,00</span>
+                    </div>
+                </div>
+
+                <!-- 3. Tributação Federal e Estadual -->
+                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                    <h2 class="text-sm font-bold uppercase tracking-wider text-blue-950 mb-4 flex items-center gap-2">
+                        🏛️ Regime Tributário e Fiscal (27 Estados)
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Regime Tributário Principal</label>
+                            <select id="regime" onchange="onRegimeChange()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-600 text-slate-800">
+                                <option value="simples">Simples Nacional</option>
+                                <option value="lucro_presumido">Lucro Presumido</option>
+                                <option value="lucro_real">Lucro Real</option>
+                                <option value="mei">MEI (Microempreendedor Individual)</option>
+                            </select>
+                        </div>
+                        <div id="simples-rbt12-container">
+                            <label class="block text-xs font-medium text-slate-700 mb-1">RBT12 (Faturamento 12m Acumulado - R$)</label>
+                            <input type="number" id="rbt12" value="0" oninput="calculate()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-600 text-slate-800">
+                        </div>
+                        <div id="aliquota-container">
+                            <label class="block text-xs font-medium text-slate-700 mb-1" id="label-aliquota">Alíquota Efetiva Federal (%)</label>
+                            <input type="number" id="aliquota" value="0" step="0.1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-600 text-slate-800">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Estado (ICMS Automático)</label>
+                            <select id="estado" onchange="onEstadoChange()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-600 text-slate-800">
+                                <option value="AC">Acre (19%)</option><option value="AL">Alagoas (19%)</option><option value="AP">Amapá (18%)</option><option value="AM">Amazonas (20%)</option><option value="BA">Bahia (20%)</option><option value="CE">Ceará (20%)</option><option value="DF">Distrito Federal (20%)</option><option value="ES">Espírito Santo (17%)</option><option value="GO">Goiás (19%)</option><option value="MA" selected>Maranhão (22%)</option><option value="MT">Mato Grosso (17%)</option><option value="MS">Mato Grosso do Sul (17%)</option><option value="MG">Minas Gerais (18%)</option><option value="PA">Pará (19%)</option><option value="PB">Paraíba (20%)</option><option value="PR">Paraná (19%)</option><option value="PE">Pernambuco (20.5%)</option><option value="PI">Piauí (21%)</option><option value="RJ">Rio de Janeiro (20%)</option><option value="RN">Rio Grande do Norte (20%)</option><option value="RS">Rio Grande do Sul (17%)</option><option value="RO">Rondônia (19%)</option><option value="RR">Roraima (20%)</option><option value="SC">Santa Catarina (17%)</option><option value="SP">São Paulo (18%)</option><option value="SE">Sergipe (19%)</option><option value="TO">Tocantins (20%)</option><option value="CUSTOM">Outro / Personalizado</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Alíquota de ICMS (%) [Editável]</label>
+                            <input type="number" id="icms_aliquota" value="22.0" step="0.1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-600 text-blue-900 font-semibold">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Substituição Tributária (ICMS-ST - R$)</label>
+                            <input type="number" id="icms_st" value="0" oninput="calculate()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-600 text-slate-800">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Precificação e Custos Variáveis -->
+                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-sm font-bold uppercase tracking-wider text-blue-950 flex items-center gap-2">
+                            🏷️ Precificação e Custos Variáveis Unitários
+                        </h2>
+                        <span id="inflation-alert-badge" class="text-xs px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200">Margem Segura</span>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Preço de Venda Unitário (R$)</label>
+                            <input type="number" id="preco_venda" value="0" step="0.5" oninput="calculate()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-600 text-blue-900 font-semibold">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Volume Mensal (Unidades)</label>
+                            <input type="number" id="volume" value="0" oninput="calculate()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-600 text-slate-800">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Custo de Aquisição / Matéria-Prima (R$)</label>
+                            <input type="number" id="custo_aquisicao" value="0" step="0.5" oninput="calculate()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-600 text-slate-800">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Embalagem Unitária (R$)</label>
+                            <input type="number" id="embalagem" value="0" step="0.1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-600 text-slate-800">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Frete Médio Unitário (R$)</label>
+                            <input type="number" id="frete_unitario" value="0" step="0.5" oninput="calculate()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-600 text-slate-800">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Comissão de Vendas (%)</label>
+                            <input type="number" id="comissao" value="0" step="0.5" oninput="calculate()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-600 text-slate-800">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. Estoque e Custos Ocultos -->
+                <div id="container-estoque-oculto" class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm transition-all duration-300">
+                    <h2 class="text-sm font-bold uppercase tracking-wider text-blue-950 mb-4 flex items-center gap-2">
+                        🏭 Estoque, Armazenagem e Custo Oportunidade
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Capital Imobilizado (R$)</label>
+                            <input type="number" id="capital_estoque" value="0" oninput="calculate()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-600 text-slate-800">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Custo Armazém / Aluguel (R$)</label>
+                            <input type="number" id="custo_armazem" value="0" oninput="calculate()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-600 text-slate-800">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Taxa CDI / Oportunidade (% a.a.)</label>
+                            <input type="number" id="taxa_cdi" value="0" step="0.25" oninput="calculate()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-600 text-slate-800">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Perdas / Avarias (%)</label>
+                            <input type="number" id="perdas_estoque" value="0" step="0.1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-600 text-slate-800">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 6. Logística Reversa ESG -->
+                <div id="container-esg" class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm transition-all duration-300">
+                    <h2 class="text-sm font-bold uppercase tracking-wider text-blue-950 mb-4 flex items-center gap-2">
+                        ♻️ Logística Reversa ESG & Créditos Verdes
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Taxa de Retorno de Produtos (%)</label>
+                            <input type="number" id="taxa_retorno" value="0" step="0.5" oninput="calculate()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-600 text-slate-800">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Custo Coleta Reversa (R$)</label>
+                            <input type="number" id="custo_reversa" value="0" step="1" oninput="calculate()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-600 text-slate-800">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Crédito de Reciclagem / Incentivo (R$)</label>
+                            <input type="number" id="credito_esg" value="0" step="50" oninput="calculate()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-600 text-slate-800">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 7. Custos Fixos Operacionais -->
+                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                    <h2 class="text-sm font-bold uppercase tracking-wider text-blue-950 mb-4 flex items-center gap-2">
+                        🏢 Custos Fixos Operacionais (CFO)
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Folha & Encargos (R$)</label>
+                            <input type="number" id="custo_folha" value="0" oninput="calculate()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-600 text-slate-800">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Pró-Labore (R$)</label>
+                            <input type="number" id="custo_prolabore" value="0" oninput="calculate()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-600 text-slate-800">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Aluguel & Internet (R$)</label>
+                            <input type="number" id="custo_escritorio" value="0" oninput="calculate()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-600 text-slate-800">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Marketing e Sistemas (R$)</label>
+                            <input type="number" id="custo_mkt" value="0" oninput="calculate()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-600 text-slate-800">
+                        </div>
+                    </div>
+                    <div id="mei-das-notice" class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-800 hidden">
+                        ℹ️ Regime MEI selecionado: O DAS fixo mensal (~R$ 75,00) foi integrado automaticamente.
+                    </div>
+                </div>
+
+                <!-- 8. Portfólio Multi-SKU -->
+                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-sm font-bold uppercase tracking-wider text-blue-950 flex items-center gap-2">
+                            📦 Portfólio & Lucro Geral (Multi-SKU)
+                        </h2>
+                        <button type="button" onclick="addPortfolioRow()" class="px-3 py-1.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-medium transition shadow-sm flex items-center gap-1">+ Adicionar Produto</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead>
+                                <tr class="bg-slate-100 text-slate-700 uppercase tracking-wider border-b border-slate-200">
+                                    <th class="p-2.5">Produto / SKU</th>
+                                    <th class="p-2.5">Preço (R$)</th>
+                                    <th class="p-2.5">Qtd (un.)</th>
+                                    <th class="p-2.5">Custo Var. (R$)</th>
+                                    <th class="p-2.5">Receita Tot.</th>
+                                    <th class="p-2.5">Margem Tot.</th>
+                                    <th class="p-2.5 text-center">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="portfolio-tbody" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-slate-100 grid grid-cols-2 md:grid-cols-4 gap-4 bg-blue-50/50 p-4 rounded-xl">
+                        <div>
+                            <span class="text-[11px] text-slate-500">Receita Consolidada</span>
+                            <div id="pf-total-rec" class="text-sm font-bold text-blue-950">R$ 0,00</div>
+                        </div>
+                        <div>
+                            <span class="text-[11px] text-slate-500">Custo Var. Consolidado</span>
+                            <div id="pf-total-cost" class="text-sm font-bold text-rose-600">R$ 0,00</div>
+                        </div>
+                        <div>
+                            <span class="text-[11px] text-slate-500">Margem Contrib. Total</span>
+                            <div id="pf-total-mc" class="text-sm font-bold text-blue-900">R$ 0,00</div>
+                        </div>
+                        <div>
+                            <span class="text-[11px] text-slate-500">Lucro Líquido Geral</span>
+                            <div id="pf-net-profit" class="text-sm font-extrabold text-emerald-600">R$ 0,00</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- RIGHT COLUMN (5 cols) -->
+            <div class="lg:col-span-5 space-y-6">
+
+                <!-- KPI Cards -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm card-print">
+                        <span class="text-xs text-slate-500 font-medium">Faturamento Bruto</span>
+                        <div id="out-faturamento" class="text-xl font-bold text-slate-900 mt-1">R$ 0,00</div>
+                        <span id="out-volume-lbl" class="text-[11px] text-blue-700 font-medium">0 unidades/mês</span>
+                    </div>
+                    <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm card-print">
+                        <span class="text-xs text-slate-500 font-medium">Lucro Líquido (EBITDA)</span>
+                        <div id="out-lucro" class="text-xl font-bold text-emerald-600 mt-1">R$ 0,00</div>
+                        <span id="out-margem-liq" class="text-[11px] text-emerald-600 font-medium">Margem: 0%</span>
+                    </div>
+                    <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm card-print">
+                        <span class="text-xs text-slate-500 font-medium">Ponto de Equilíbrio (Break-Even)</span>
+                        <div id="out-breakeven-unid" class="text-xl font-bold text-amber-600 mt-1">0 un.</div>
+                        <span id="out-breakeven-rev" class="text-[11px] text-slate-500 font-medium">R$ 0,00</span>
+                    </div>
+                    <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm card-print">
+                        <span class="text-xs text-slate-500 font-medium">Fôlego de Caixa (Runway)</span>
+                        <div id="out-runway" class="text-xl font-bold text-blue-600 mt-1">0.0 meses</div>
+                        <span class="text-[11px] text-slate-500 font-medium">Reserva sem vendas</span>
+                    </div>
+                </div>
+
+                <!-- Teste de Estresse -->
+                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                    <h2 class="text-sm font-bold uppercase tracking-wider text-blue-950 mb-3 flex items-center justify-between">
+                        <span>🛡️ Teste de Estresse de Caixa</span>
+                        <span class="text-xs font-normal text-slate-500">Queda de Vendas</span>
+                    </h2>
+                    <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                        <div class="bg-slate-50 border border-slate-200 p-2.5 rounded-xl">
+                            <span class="text-slate-500 block text-[10px]">Queda 30%</span>
+                            <span id="stress-30" class="font-bold text-blue-900 text-sm">0 meses</span>
+                        </div>
+                        <div class="bg-slate-50 border border-slate-200 p-2.5 rounded-xl">
+                            <span class="text-slate-500 block text-[10px]">Queda 50%</span>
+                            <span id="stress-50" class="font-bold text-amber-700 text-sm">0 meses</span>
+                        </div>
+                        <div class="bg-slate-50 border border-slate-200 p-2.5 rounded-xl">
+                            <span class="text-slate-500 block text-[10px]">Parada (-100%)</span>
+                            <span id="stress-100" class="font-bold text-rose-600 text-sm">0 meses</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DRE Gerencial -->
+                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm card-print">
+                    <h2 class="text-sm font-bold uppercase tracking-wider text-blue-950 mb-4 flex items-center justify-between">
+                        <span>📊 DRE Gerencial Consolidada</span>
+                        <span class="text-xs font-normal text-slate-500">Mensal</span>
+                    </h2>
+                    <div class="space-y-2 text-sm divide-y divide-slate-100">
+                        <div class="flex justify-between pt-1">
+                            <span class="text-slate-700">(=) Receita Bruta Total</span>
+                            <span id="dre-receita" class="font-semibold text-slate-900">R$ 0,00</span>
+                        </div>
+                        <div class="flex justify-between pt-2">
+                            <span class="text-slate-500 text-xs">(-) Impostos s/ Faturamento</span>
+                            <span id="dre-impostos" class="text-rose-600 text-xs font-medium">R$ 0,00</span>
+                        </div>
+                        <div class="flex justify-between pt-2">
+                            <span class="text-slate-500 text-xs">(-) Custos Variáveis & CMV</span>
+                            <span id="dre-var" class="text-rose-600 text-xs font-medium">R$ 0,00</span>
+                        </div>
+                        <div class="flex justify-between pt-2 bg-blue-50/50 px-2 py-1.5 rounded-lg">
+                            <span class="font-medium text-slate-800">(=) Margem de Contribuição</span>
+                            <span id="dre-mc" class="font-bold text-blue-900">R$ 0,00</span>
+                        </div>
+                        <div class="flex justify-between pt-2">
+                            <span class="text-slate-500 text-xs">(-) Custos Fixos Operacionais</span>
+                            <span id="dre-fixos" class="text-rose-600 text-xs font-medium">R$ 0,00</span>
+                        </div>
+                        <div class="flex justify-between pt-2">
+                            <span class="text-slate-500 text-xs">(-) Custos Ocultos, ESG & Desperdícios</span>
+                            <span id="dre-esg" class="text-rose-600 text-xs font-medium">R$ 0,00</span>
+                        </div>
+                        <div class="flex justify-between pt-3 border-t border-slate-200 bg-blue-50 px-3 py-2 rounded-xl mt-2">
+                            <span class="font-bold text-blue-950">(=) Resultado Líquido Operacional</span>
+                            <span id="dre-resultado" class="font-extrabold text-blue-900 text-base">R$ 0,00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gráfico SVG Break-Even -->
+                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                    <div class="flex items-center justify-between mb-3">
+                        <h2 class="text-sm font-bold uppercase tracking-wider text-blue-950 flex items-center gap-2">
+                            📈 Momento da Virada (Break-Even)
+                        </h2>
+                        <span class="text-xs text-slate-500">Receita vs Custos</span>
+                    </div>
+                    <div class="relative w-full h-64 bg-slate-900 rounded-xl border border-slate-800 p-2 overflow-hidden flex items-center justify-center">
+                        <svg id="svg-chart" class="w-full h-full" viewBox="0 0 500 250" preserveAspectRatio="none"></svg>
+                    </div>
+                    <div class="flex items-center justify-center gap-6 mt-3 text-xs text-slate-600">
+                        <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span> Receita</div>
+                        <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span> Custos</div>
+                        <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-amber-400 inline-block"></span> Break-Even</div>
+                    </div>
+                </div>
+
+            </div>
+
+        </main>
+
+        <!-- Dedicated Executive PDF Report Template (Clean Corporate Layout, hidden in normal view, rendered specifically for PDF export) -->
+        <div id="executive-pdf-report" class="print-only bg-white text-slate-900 p-10 max-w-[210mm] mx-auto text-xs font-sans">
+            <div class="flex justify-between items-center pb-6 border-b-2 border-blue-900 mb-6">
+                <div>
+                    <h1 class="text-2xl font-extrabold text-blue-950 tracking-tight">ContaVerde ERP Pro</h1>
+                    <p class="text-xs text-emerald-600 font-semibold uppercase tracking-wider">Relatório Executivo de Controladoria & IA</p>
+                </div>
+                <div class="text-right">
+                    <div id="pdf-rep-date" class="font-bold text-slate-700">Data: 16/11/2026</div>
+                    <div class="text-[10px] text-slate-500">Módulo v8.6 Auditado</div>
+                </div>
+            </div>
+
+            <!-- Company Info Box -->
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-6 grid grid-cols-2 gap-4">
+                <div>
+                    <span class="text-[10px] text-slate-500 block uppercase font-bold">Empresa / Razão Social</span>
+                    <span id="pdf-rep-empresa" class="text-sm font-bold text-blue-950">Não informada</span>
+                </div>
+                <div>
+                    <span class="text-[10px] text-slate-500 block uppercase font-bold">CNPJ</span>
+                    <span id="pdf-rep-cnpj" class="text-sm font-semibold text-slate-800">00.000.000/0001-00</span>
+                </div>
+            </div>
+
+            <!-- Key Metrics Executive Grid -->
+            <h3 class="font-bold text-blue-950 text-sm uppercase mb-3 border-l-4 border-emerald-500 pl-2">1. Sumário de Indicadores Vitais (KPIs)</h3>
+            <div class="grid grid-cols-4 gap-3 mb-6">
+                <div class="bg-blue-50/60 border border-blue-200 rounded-xl p-3 text-center">
+                    <span class="text-[10px] text-slate-500 block font-medium">Faturamento Bruto</span>
+                    <span id="pdf-rep-fat" class="font-bold text-blue-950 text-sm">R$ 0,00</span>
+                </div>
+                <div class="bg-emerald-50/60 border border-emerald-200 rounded-xl p-3 text-center">
+                    <span class="text-[10px] text-slate-500 block font-medium">Lucro Líquido (EBITDA)</span>
+                    <span id="pdf-rep-lucro" class="font-bold text-emerald-700 text-sm">R$ 0,00</span>
+                </div>
+                <div class="bg-amber-50/60 border border-amber-200 rounded-xl p-3 text-center">
+                    <span class="text-[10px] text-slate-500 block font-medium">Break-Even</span>
+                    <span id="pdf-rep-be" class="font-bold text-amber-700 text-sm">0 un.</span>
+                </div>
+                <div class="bg-purple-50/60 border border-purple-200 rounded-xl p-3 text-center">
+                    <span class="text-[10px] text-slate-500 block font-medium">Fôlego de Caixa</span>
+                    <span id="pdf-rep-runway" class="font-bold text-purple-700 text-sm">0 meses</span>
+                </div>
+            </div>
+
+            <!-- DRE Executiva Table -->
+            <h3 class="font-bold text-blue-950 text-sm uppercase mb-3 border-l-4 border-emerald-500 pl-2">2. DRE Gerencial Consolidada</h3>
+            <table class="w-full text-left border border-slate-200 rounded-xl mb-6 overflow-hidden">
+                <thead>
+                    <tr class="bg-blue-900 text-white uppercase text-[10px]">
+                        <th class="p-2.5">Conta / Descrição</th>
+                        <th class="p-2.5 text-right">Valor Mensal (R$)</th>
+                    </tr>
+                </thead>
+                <tbody id="pdf-rep-dre-tbody" class="divide-y divide-slate-100 text-xs">
+                    <!-- Injected via JS -->
+                </tbody>
+            </table>
+
+            <!-- CFO Diagnostics Audit -->
+            <h3 class="font-bold text-blue-950 text-sm uppercase mb-2 border-l-4 border-emerald-500 pl-2">3. Parecer do CFO Virtual & Auditoria</h3>
+            <div id="pdf-rep-audit-text" class="p-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 text-xs mb-8 leading-relaxed">
+                Aguardando dados para auditoria...
+            </div>
+
+            <!-- Official Verification Footer -->
+            <div class="mt-12 pt-4 border-t-2 border-slate-300 text-center text-[10px] text-slate-600">
+                <p class="font-bold text-blue-950">Documento gerado, auditado e verificado por ContaVerde ERP Pro • Controladoria & IA</p>
+                <p class="text-slate-400 mt-0.5">Autenticidade garantida por motor offline seguro • Versão 8.6</p>
+            </div>
+        </div>
+
+        <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500 no-print">
+            ContaVerde ERP Pro v8.6 &bull; Controladoria, Tributos, Refis & ESG &bull; 100% Offline e Seguro
+        </footer>
+    </div>
+
+    <!-- JAVASCRIPT -->
+    <script>
+        let currentMode = 'full';
+        let portfolioProducts = [];
+        let customLosses = [];
+        let globalSuggestedPrice = 0;
+
+        // Pending export state for pre-download filename customization modal
+        let pendingExportAction = null; // 'pdf' | 'excel' | 'json'
+        let pendingExportExt = '';
+
+        // Dynamic Pitch Carousel Data
+        const pitchFeatures = [
+            { icon: "🔮", title: "Simulador Estratégico \"E Se\"", desc: "Simule variações percentuais em preço, volume e custos fixos visualizando o impacto imediato no lucro líquido." },
+            { icon: "🏛️", title: "Tributos & Refis 60 Meses", desc: "Cálculo integrado para Simples Nacional, Lucro Real, Presumido e MEI em 27 estados com simulador de parcelamento fiscal." },
+            { icon: "♻️", title: "Logística Reversa ESG & Custos Ocultos", desc: "Mapeie perdas de estoque, avarias, inadimplência e créditos verdes para eliminar vazamentos de lucro invisíveis." },
+            { icon: "📊", title: "Relatório PDF Executivo Auditado", desc: "Gere relatórios gerenciais formais em PDF com sumário executivo, DRE estruturada e rodapé oficial de verificação." }
+        ];
+        let currentCarouselIndex = 0;
+
+        function initPitchCarousel() {
+            setInterval(() => {
+                currentCarouselIndex = (currentCarouselIndex + 1) % pitchFeatures.length;
+                const f = pitchFeatures[currentCarouselIndex];
+                const iconEl = document.getElementById('carousel-icon');
+                const titleEl = document.getElementById('carousel-title');
+                const descEl = document.getElementById('carousel-desc');
+                const box = document.getElementById('pitch-carousel-box');
+                
+                if(iconEl && titleEl && descEl && box) {
+                    box.style.opacity = '0.3';
+                    setTimeout(() => {
+                        iconEl.innerText = f.icon;
+                        titleEl.innerText = f.title;
+                        descEl.innerText = f.desc;
+                        box.style.opacity = '1';
+                        
+                        document.querySelectorAll('.indicator-dot').forEach((dot, idx) => {
+                            dot.className = `w-2 h-2 rounded-full indicator-dot ${idx === currentCarouselIndex ? 'bg-emerald-400' : 'bg-slate-600'}`;
+                        });
+                    }, 250);
+                }
+            }, 3500);
+        }
+
+        const stateIcmsRates = {
+            'AC': 19.0, 'AL': 19.0, 'AP': 18.0, 'AM': 20.0, 'BA': 20.0,
+            'CE': 20.0, 'DF': 20.0, 'ES': 17.0, 'GO': 19.0, 'MA': 22.0,
+            'MT': 17.0, 'MS': 17.0, 'MG': 18.0, 'PA': 19.0, 'PB': 20.0,
+            'PR': 19.0, 'PE': 20.5, 'PI': 21.0, 'RJ': 20.0, 'RN': 20.0,
+            'RS': 17.0, 'RO': 19.0, 'RR': 20.0, 'SC': 17.0, 'SP': 18.0,
+            'SE': 19.0, 'TO': 20.0, 'CUSTOM': 18.0
+        };
+
+        function proceedToVinheta() {
+            const pitch = document.getElementById('pitch-screen');
+            const vinheta = document.getElementById('cinematic-vinheta');
+            const pb = document.getElementById('vinheta-progress');
+            if(pitch) {
+                pitch.style.transition = 'all 0.6s ease';
+                pitch.style.opacity = '0';
+                setTimeout(() => {
+                    pitch.classList.add('hidden');
+                    if(vinheta) vinheta.classList.remove('hidden');
+                    if(pb) setTimeout(() => pb.style.transform = 'translateX(0)', 100);
+                }, 600);
+            }
+        }
+
+        function dismissVinheta() {
+            const v = document.getElementById('cinematic-vinheta');
+            const w = document.getElementById('welcome-screen');
+            if (v) {
+                v.style.transition = 'all 0.6s ease';
+                v.style.opacity = '0';
+                v.style.transform = 'scale(1.05)';
+                setTimeout(() => { v.classList.add('hidden'); if(w) w.classList.remove('hidden'); }, 600);
+            }
+        }
+
+        function openCalculatorWithMode(mode) {
+            document.getElementById('welcome-screen').classList.add('hidden');
+            document.getElementById('erp-wrapper').classList.remove('hidden');
+            setMode(mode);
+            calculate();
+        }
+
+        function returnToWelcome() {
+            document.getElementById('erp-wrapper').classList.add('hidden');
+            document.getElementById('welcome-screen').classList.remove('hidden');
+        }
+
+        function onEstadoChange() {
+            const st = document.getElementById('estado').value;
+            if(stateIcmsRates[st] !== undefined) {
+                document.getElementById('icms_aliquota').value = stateIcmsRates[st];
+            }
+            calculate();
+        }
+
+        function showToast(msg, type='success') {
+            const container = document.getElementById('toast-container');
+            if(!container) return;
+            const toast = document.createElement('div');
+            toast.className = `px-4 py-3 rounded-xl border text-xs font-semibold shadow-lg transition-all duration-300 flex items-center gap-2 ${
+                type==='success' ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 
+                type==='error' ? 'bg-rose-50 border-rose-300 text-rose-800' : 'bg-slate-900 border-slate-700 text-slate-200'
+            }`;
+            toast.innerHTML = `<span>${type==='success'?'✅':type==='error'?'❌':'ℹ️'}</span> ${msg}`;
+            container.appendChild(toast);
+            setTimeout(() => { toast.style.opacity='0'; setTimeout(()=>toast.remove(),300); }, 3000);
+        }
+
+        function closeModal() { document.getElementById('custom-modal').classList.add('hidden'); }
+
+        function openAddCustomLossModal() {
+            document.getElementById('custom_loss_name').value = '';
+            document.getElementById('custom_loss_pct').value = '2.0';
+            document.getElementById('custom-loss-modal').classList.remove('hidden');
+        }
+
+        function closeCustomLossModal() {
+            document.getElementById('custom-loss-modal').classList.add('hidden');
+        }
+
+        // Generates a clean, filesystem-safe slug from the company name
+        function sanitizeCompanyNameForFile(rawName) {
+            const cleaned = (rawName || '')
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '') // remove accents
+                .replace(/[^a-zA-Z0-9]+/g, '_') // replace spaces/symbols with underscore
+                .replace(/^_+|_+$/g, '');
+            return cleaned || 'Empresa_Sem_Nome';
+        }
+
+        // Generates a random 4-digit key (1000 to 9999)
+        function generateRandom4DigitKey() {
+            return Math.floor(1000 + Math.random() * 9000).toString();
+        }
+
+        // Builds smart default filename base (without extension)
+        function buildSmartExportFilenameBase(exportTypeLabel, randomKey) {
+            const empresaRaw = document.getElementById('empresa_nome')?.value || '';
+            const companySlug = sanitizeCompanyNameForFile(empresaRaw);
+            const dateStr = new Date().toISOString().slice(0, 10);
+            const key4 = randomKey || generateRandom4DigitKey();
+            return `${exportTypeLabel}_${companySlug}_${dateStr}_${key4}`;
+        }
+
+        // Updates live filename preview inside export modal
+        function updateExportFilenamePreview() {
+            const inputEl = document.getElementById('export_filename_input');
+            const previewEl = document.getElementById('export-modal-preview');
+            if (!inputEl || !previewEl) return;
+            const rawVal = inputEl.value.trim();
+            const safeBase = (rawVal || 'arquivo_contaverde')
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-zA-Z0-9_-]+/g, '_')
+                .replace(/^_+|_+$/g, '') || 'arquivo_contaverde';
+            previewEl.innerText = `Arquivo final: ${safeBase}${pendingExportExt}`;
+        }
+
+        // Opens the quick pre-export modal for PDF, Excel, or JSON backup
+        function openExportFilenameModal(actionType) {
+            pendingExportAction = actionType;
+            const modal = document.getElementById('export-filename-modal');
+            const titleEl = document.getElementById('export-modal-title');
+            const extEl = document.getElementById('export_filename_ext');
+            const inputEl = document.getElementById('export_filename_input');
+
+            let typeTag = 'Relatorio_Executivo_PDF';
+            let modalTitle = 'Exportar Relatório PDF Executivo';
+            let ext = '.pdf';
+
+            if (actionType === 'excel') {
+                typeTag = 'Planilha_Excel';
+                modalTitle = 'Exportar Planilha Excel';
+                ext = '.xlsx';
+            } else if (actionType === 'json') {
+                typeTag = 'Backup_JSON';
+                modalTitle = 'Exportar Backup JSON';
+                ext = '.json';
+            }
+
+            pendingExportExt = ext;
+            titleEl.innerText = modalTitle;
+            extEl.innerText = ext;
+            inputEl.dataset.typeTag = typeTag;
+            inputEl.value = buildSmartExportFilenameBase(typeTag, generateRandom4DigitKey());
+            inputEl.oninput = updateExportFilenamePreview;
+
+            updateExportFilenamePreview();
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                inputEl.focus();
+                inputEl.select();
+            }, 50);
+        }
+
+        // Regenerates a new 4-digit random key in the current modal filename
+        function regenerateExportRandomKey() {
+            const inputEl = document.getElementById('export_filename_input');
+            if (!inputEl) return;
+            const newKey = generateRandom4DigitKey();
+            const currentVal = inputEl.value.trim();
+            // Replace trailing 4-digit key if present, otherwise append _XXXX
+            if (/_\d{4}$/.test(currentVal)) {
+                inputEl.value = currentVal.replace(/_\d{4}$/, `_${newKey}`);
+            } else {
+                inputEl.value = `${currentVal || 'ContaVerde'}_${newKey}`;
+            }
+            updateExportFilenamePreview();
+            showToast(`Nova chave aleatória gerada: #${newKey}`, 'info');
+        }
+
+        function closeExportFilenameModal() {
+            document.getElementById('export-filename-modal').classList.add('hidden');
+            pendingExportAction = null;
+        }
+
+        // Executes the actual export using the user's confirmed/edited filename
+        function confirmExportDownload() {
+            const inputEl = document.getElementById('export_filename_input');
+            const rawVal = (inputEl?.value || '').trim();
+            const safeBase = (rawVal || 'contaverde_exportacao')
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-zA-Z0-9_-]+/g, '_')
+                .replace(/^_+|_+$/g, '') || 'contaverde_exportacao';
+
+            const action = pendingExportAction;
+            closeExportFilenameModal();
+
+            if (action === 'pdf') {
+                executePdfReportDownload(`${safeBase}.pdf`);
+            } else if (action === 'excel') {
+                executeExcelExportDownload(`${safeBase}.xlsx`);
+            } else if (action === 'json') {
+                executeJsonBackupDownload(`${safeBase}.json`);
+            }
+        }
+
+        function confirmAddCustomLoss() {
+            const name = document.getElementById('custom_loss_name').value.trim();
+            const pct = parseFloat(document.getElementById('custom_loss_pct').value) || 0;
+            if(!name) {
+                showToast('Informe o nome da perda personalizada!', 'error');
+                return;
+            }
+            const id = 'custom_loss_' + Date.now();
+            customLosses.push({ id, name, pct, checked: true });
+            closeCustomLossModal();
+            renderCustomLosses();
+            calculate();
+            showToast(`Perda "${name}" adicionada com sucesso!`);
+        }
+
+        function removeCustomLoss(id) {
+            customLosses = customLosses.filter(l => l.id !== id);
+            renderCustomLosses();
+            calculate();
+            showToast('Perda personalizada removida.', 'info');
+        }
+
+        function renderCustomLosses() {
+            const container = document.getElementById('custom-losses-container');
+            if(!container) return;
+            container.innerHTML = '';
+            if(customLosses.length === 0) return;
+            const grid = document.createElement('div');
+            grid.className = 'grid grid-cols-1 md:grid-cols-2 gap-2 text-xs pt-1';
+            customLosses.forEach(loss => {
+                const item = document.createElement('div');
+                item.className = 'flex items-center justify-between p-2.5 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200';
+                item.innerHTML = `
+                    <label class="flex items-center gap-2 cursor-pointer flex-1">
+                        <input type="checkbox" id="${loss.id}" ${loss.checked ? 'checked' : ''} onchange="updateCustomLossCheck('${loss.id}', this.checked)" class="rounded text-blue-900 accent-blue-900">
+                        <span>${loss.name} (${loss.pct}%)</span>
+                    </label>
+                    <button type="button" onclick="removeCustomLoss('${loss.id}')" class="text-rose-600 hover:text-rose-800 font-bold px-2 py-0.5 rounded text-xs ml-2" title="Remover">×</button>
+                `;
+                grid.appendChild(item);
+            });
+            container.appendChild(grid);
+        }
+
+        function updateCustomLossCheck(id, checked) {
+            const loss = customLosses.find(l => l.id === id);
+            if(loss) loss.checked = checked;
+            calculate();
+        }
+
+        function getSavedSkus() {
+            try { return JSON.parse(localStorage.getItem('contaverde_skus_v8')) || []; } catch(e) { return []; }
+        }
+
+        function saveSkusList(skus) {
+            try { localStorage.setItem('contaverde_skus_v8', JSON.stringify(skus)); } catch(e) {}
+        }
+
+        function openSkuManager() {
+            const modal = document.getElementById('custom-modal');
+            const titleEl = document.getElementById('modal-title');
+            const descEl = document.getElementById('modal-desc');
+            const bodyEl = document.getElementById('modal-body');
+            titleEl.innerText = 'Gerenciador de SKUs v8.6';
+            descEl.innerText = 'Selecione ou exclua produtos salvos:';
+            const skus = getSavedSkus();
+            let html = '<div class="space-y-3 max-h-60 overflow-y-auto pr-1">';
+            if(skus.length === 0) html += '<p class="text-xs text-slate-500">Nenhum SKU salvo.</p>';
+            else {
+                skus.forEach((sku, idx) => {
+                    html += `<div class="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl flex items-center justify-between transition">
+                        <div class="flex-1 cursor-pointer" onclick="loadSku(${idx})">
+                            <div class="font-bold text-blue-950 text-sm">${sku.name}</div>
+                            <div class="text-xs text-slate-500">Preço: R$ ${sku.preco_venda.toFixed(2)} | Vol: ${sku.volume} un.</div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button type="button" onclick="loadSku(${idx})" class="text-xs px-2.5 py-1 bg-blue-100 text-blue-800 rounded-lg border font-medium">Carregar</button>
+                            <button type="button" onclick="deleteSku(${idx})" class="text-xs px-2.5 py-1 bg-rose-100 text-rose-800 rounded-lg border font-medium">Excluir</button>
+                        </div>
+                    </div>`;
+                });
+            }
+            html += '</div>';
+            bodyEl.innerHTML = html;
+            modal.classList.remove('hidden');
+        }
+
+        function loadSku(idx) {
+            const skus = getSavedSkus();
+            const sku = skus[idx];
+            if(!sku) return;
+            document.getElementById('sku_nome').value = sku.name;
+            document.getElementById('preco_venda').value = sku.preco_venda;
+            document.getElementById('volume').value = sku.volume;
+            document.getElementById('custo_aquisicao').value = sku.custo_aquisicao;
+            document.getElementById('embalagem').value = sku.embalagem;
+            document.getElementById('frete_unitario').value = sku.frete_unitario;
+            document.getElementById('comissao').value = sku.comissao;
+            closeModal();
+            calculate();
+            showToast(`SKU "${sku.name}" carregado!`);
+        }
+
+        function deleteSku(idx) {
+            let skus = getSavedSkus();
+            skus.splice(idx, 1);
+            saveSkusList(skus);
+            openSkuManager();
+            showToast('SKU excluído.', 'info');
+        }
+
+        function saveCurrentSku() {
+            const name = document.getElementById('sku_nome').value.trim();
+            if(!name) { showToast('Informe o nome do produto!', 'error'); return; }
+            const sku = {
+                name,
+                preco_venda: parseFloat(document.getElementById('preco_venda').value)||0,
+                volume: parseInt(document.getElementById('volume').value)||0,
+                custo_aquisicao: parseFloat(document.getElementById('custo_aquisicao').value)||0,
+                embalagem: parseFloat(document.getElementById('embalagem').value)||0,
+                frete_unitario: parseFloat(document.getElementById('frete_unitario').value)||0,
+                comissao: parseFloat(document.getElementById('comissao').value)||0
+            };
+            let skus = getSavedSkus();
+            const idx = skus.findIndex(s => s.name.toLowerCase() === name.toLowerCase());
+            if(idx >= 0) skus[idx] = sku; else skus.push(sku);
+            saveSkusList(skus);
+
+            const cVarUnit = sku.custo_aquisicao + sku.embalagem + sku.frete_unitario + (sku.preco_venda * (sku.comissao/100));
+            const pIdx = portfolioProducts.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
+            if(pIdx >= 0) {
+                portfolioProducts[pIdx].preco = sku.preco_venda;
+                portfolioProducts[pIdx].qtd = sku.volume;
+                portfolioProducts[pIdx].custoVar = cVarUnit;
+            } else {
+                portfolioProducts.push({ name, preco: sku.preco_venda, qtd: sku.volume, custoVar: cVarUnit });
+            }
+            renderPortfolioTable();
+            calculate();
+            showToast(`SKU "${name}" salvo com sucesso!`);
+        }
+
+        function renderPortfolioTable() {
+            const tbody = document.getElementById('portfolio-tbody');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+            if(portfolioProducts.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400 text-xs">Nenhum produto no portfólio. Use "Salvar SKU".</td></tr>`;
+                return;
+            }
+            portfolioProducts.forEach((p, idx) => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="p-2"><input type="text" value="${p.name}" oninput="updatePortfolio(${idx}, 'name', this.value)" class="w-full bg-slate-50 border rounded px-2 py-1 text-xs"></td>
+                        <td class="p-2"><input type="number" value="${p.preco}" step="0.5" oninput="updatePortfolio(${idx}, 'preco', this.value)" class="w-24 bg-slate-50 border rounded px-2 py-1 text-xs"></td>
+                        <td class="p-2"><input type="number" value="${p.qtd}" oninput="updatePortfolio(${idx}, 'qtd', this.value)" class="w-20 bg-slate-50 border rounded px-2 py-1 text-xs"></td>
+                        <td class="p-2"><input type="number" value="${p.custoVar}" step="0.5" oninput="updatePortfolio(${idx}, 'custoVar', this.value)" class="w-24 bg-slate-50 border rounded px-2 py-1 text-xs"></td>
+                        <td class="p-2 font-semibold text-slate-900">${formatBRL(p.preco * p.qtd)}</td>
+                        <td class="p-2 font-semibold text-blue-900">${formatBRL((p.preco - p.custoVar) * p.qtd)}</td>
+                        <td class="p-2 text-center"><button type="button" onclick="removePortfolioRow(${idx})" class="text-rose-600 font-bold px-2 py-1 rounded bg-rose-50 border">×</button></td>
+                    </tr>`;
+            });
+        }
+
+        function addPortfolioRow() {
+            portfolioProducts.push({ name: 'Novo Produto', preco: 0, qtd: 0, custoVar: 0 });
+            renderPortfolioTable();
+            calculate();
+        }
+
+        function removePortfolioRow(idx) {
+            portfolioProducts.splice(idx, 1);
+            renderPortfolioTable();
+            calculate();
+        }
+
+        function updatePortfolio(idx, field, val) {
+            portfolioProducts[idx][field] = field === 'name' ? val : (parseFloat(val) || 0);
+            renderPortfolioTable();
+            calculate();
+        }
+
+        function setMode(mode) {
+            currentMode = mode;
+            const est = document.getElementById('container-estoque-oculto');
+            const esg = document.getElementById('container-esg');
+            if(mode === 'full') {
+                est.style.display = 'block'; esg.style.display = 'block';
+                document.getElementById('btn-mode-full').className = 'px-3 py-1.5 rounded-lg font-medium transition bg-blue-700 text-white shadow';
+                document.getElementById('btn-mode-simple').className = 'px-3 py-1.5 rounded-lg font-medium transition text-blue-200 hover:text-white';
+            } else {
+                est.style.display = 'none'; esg.style.display = 'none';
+                document.getElementById('btn-mode-full').className = 'px-3 py-1.5 rounded-lg font-medium transition text-blue-200 hover:text-white';
+                document.getElementById('btn-mode-simple').className = 'px-3 py-1.5 rounded-lg font-medium transition bg-blue-700 text-white shadow';
+            }
+            calculate();
+        }
+
+        function onRegimeChange() {
+            const regime = document.getElementById('regime').value;
+            const rbtContainer = document.getElementById('simples-rbt12-container');
+            const aliqInput = document.getElementById('aliquota');
+            const aliqLabel = document.getElementById('label-aliquota');
+            const notice = document.getElementById('mei-das-notice');
+
+            if(regime === 'mei') {
+                rbtContainer.style.display = 'none';
+                aliqLabel.innerText = 'Imposto Variável (%)';
+                aliqInput.value = 0; aliqInput.disabled = true;
+                notice.classList.remove('hidden');
+            } else {
+                rbtContainer.style.display = 'block';
+                aliqInput.disabled = false;
+                aliqLabel.innerText = regime === 'simples' ? 'Alíquota Efetiva Federal (%)' : 'Alíquota Média (%)';
+                if(parseFloat(aliqInput.value) === 0) {
+                    aliqInput.value = regime === 'simples' ? 6.0 : (regime === 'lucro_presumido' ? 11.33 : 14.25);
+                }
+                notice.classList.add('hidden');
+            }
+            calculate();
+        }
+
+        function applySuggestedPrice() {
+            if(globalSuggestedPrice > 0) {
+                document.getElementById('preco_venda').value = globalSuggestedPrice.toFixed(2);
+                calculate();
+                showToast(`Preço sugerido de R$ ${globalSuggestedPrice.toFixed(2)} aplicado!`);
+            }
+        }
+
+        function clearAll() {
+            localStorage.removeItem('contaverde_erp_state_v8');
+            document.querySelectorAll('input, select').forEach(el => {
+                if(el.type === 'number') el.value = '0';
+                else if(el.type === 'text') el.value = '';
+                else if(el.tagName === 'SELECT') el.selectedIndex = 0;
+            });
+            portfolioProducts = [];
+            customLosses = [];
+            renderPortfolioTable();
+            renderCustomLosses();
+            onRegimeChange();
+            calculate();
+            showToast('Sistema limpo com sucesso!');
+        }
+
+        // MAIN CALCULATION ENGINE
+        function calculate() {
+            const getVal = id => parseFloat(document.getElementById(id).value) || 0;
+            const regime = document.getElementById('regime').value;
+            let rbt12 = getVal('rbt12');
+            let aliquota = document.getElementById('aliquota').disabled ? 0 : getVal('aliquota');
+            const icmsAliq = getVal('icms_aliquota');
+            const icmsSt = getVal('icms_st');
+
+            const capital = currentMode === 'full' ? getVal('capital_estoque') : 0;
+            const armazem = currentMode === 'full' ? getVal('custo_armazem') : 0;
+            const cdi = currentMode === 'full' ? getVal('taxa_cdi') : 0;
+            const perdas = currentMode === 'full' ? getVal('perdas_estoque') : 0;
+
+            const tRetorno = currentMode === 'full' ? getVal('taxa_retorno') : 0;
+            const cReversa = currentMode === 'full' ? getVal('custo_reversa') : 0;
+            const credEsg = currentMode === 'full' ? getVal('credito_esg') : 0;
+
+            const fFolha = getVal('custo_folha');
+            const fProlabore = getVal('custo_prolabore');
+            const fEscritorio = getVal('custo_escritorio');
+            const fMkt = getVal('custo_mkt');
+
+            if(regime === 'simples' && rbt12 > 0) {
+                if(rbt12 <= 180000) aliquota = 4.0;
+                else if(rbt12 <= 360000) aliquota = 7.3;
+                else if(rbt12 <= 720000) aliquota = 9.5;
+                else if(rbt12 <= 1800000) aliquota = 10.7;
+                else aliquota = 14.0;
+                document.getElementById('aliquota').value = aliquota.toFixed(1);
+            }
+
+            let meiDas = regime === 'mei' ? 75.00 : 0;
+            if(regime === 'mei') aliquota = 0;
+
+            let totalRecPort = 0, totalCostPort = 0, totalQtdPort = 0;
+            portfolioProducts.forEach(p => {
+                totalRecPort += p.preco * p.qtd;
+                totalCostPort += p.custoVar * p.qtd;
+                totalQtdPort += p.qtd;
+            });
+
+            const pVenda = getVal('preco_venda');
+            const vol = getVal('volume');
+            const cAquis = getVal('custo_aquisicao');
+            const emb = getVal('embalagem');
+            const frete = getVal('frete_unitario');
+            const comissaoPct = getVal('comissao');
+            const cVarUnit = cAquis + emb + frete + (pVenda * (comissaoPct / 100));
+
+            // Sazonalidade 12 meses
+            let somaFatorSaz = 0;
+            for(let i=1; i<=12; i++) {
+                somaFatorSaz += getVal(`saz_${i}`);
+            }
+            const mediaSazonal = somaFatorSaz / 12;
+
+            const receitaBrutaBase = totalRecPort > 0 ? totalRecPort : (pVenda * vol);
+            const receitaBrutaAnual = receitaBrutaBase * 12 * mediaSazonal;
+            const receitaBrutaMensal = receitaBrutaAnual / 12;
+
+            const custosVarTotais = totalCostPort > 0 ? totalCostPort : (cVarUnit * vol);
+            const totalImpostoPct = aliquota + icmsAliq;
+            const impostosFat = (receitaBrutaMensal * (totalImpostoPct / 100)) + icmsSt;
+            const mcTotal = receitaBrutaMensal - impostosFat - custosVarTotais;
+
+            // Checklist de Perdas
+            let perdaChecklist = 0;
+            if(document.getElementById('check_perdas_estoque')?.checked) perdaChecklist += receitaBrutaMensal * 0.03;
+            if(document.getElementById('check_retrabalho')?.checked) perdaChecklist += receitaBrutaMensal * 0.02;
+            if(document.getElementById('check_taxas_cartao')?.checked) perdaChecklist += receitaBrutaMensal * 0.015;
+            if(document.getElementById('check_inadimplencia')?.checked) perdaChecklist += receitaBrutaMensal * 0.025;
+            
+            customLosses.forEach(loss => {
+                const el = document.getElementById(loss.id);
+                if(el && el.checked) {
+                    perdaChecklist += receitaBrutaMensal * (loss.pct / 100);
+                }
+            });
+
+            document.getElementById('checklist-perda-out').innerText = formatBRL(perdaChecklist);
+            document.getElementById('sazonal-total-out').innerText = formatBRL(receitaBrutaAnual);
+
+            // Custos Ocultos e ESG
+            const cOportunidade = capital * ((cdi / 100) / 12);
+            const cPerdasEstoque = capital * (perdas / 100);
+            const totalVolEval = totalQtdPort > 0 ? totalQtdPort : vol;
+            const cEsgTotal = (totalVolEval * (tRetorno / 100) * cReversa) - credEsg;
+            const custosOcultosTotais = armazem + cOportunidade + cPerdasEstoque + Math.max(0, cEsgTotal) + perdaChecklist;
+
+            const custosFixosTotais = fFolha + fProlabore + fEscritorio + fMkt + meiDas;
+            const custosFixosCompletos = custosFixosTotais + custosOcultosTotais;
+            const custosTotais = impostosFat + custosVarTotais + custosFixosCompletos;
+
+            const resultadoLiquido = receitaBrutaMensal - custosTotais;
+            const margemLiq = receitaBrutaMensal > 0 ? (resultadoLiquido / receitaBrutaMensal) * 100 : 0;
+
+            // SIMULADOR "E SE" (WHAT-IF)
+            const whatifPrecoPct = getVal('whatif_preco_pct') / 100;
+            const whatifVolPct = getVal('whatif_vol_pct') / 100;
+            const whatifCustoFixoPct = getVal('whatif_custofixo_pct') / 100;
+
+            const adjustedPreco = pVenda * (1 + whatifPrecoPct);
+            const adjustedVol = vol * (1 + whatifVolPct);
+            const adjustedRecBase = totalRecPort > 0 ? (totalRecPort * (1 + whatifPrecoPct) * (1 + whatifVolPct)) : (adjustedPreco * adjustedVol);
+            const adjustedRecAnual = adjustedRecBase * 12 * mediaSazonal;
+            const adjustedRecMensal = adjustedRecAnual / 12;
+
+            const adjustedCustoVarUnit = cAquis + emb + frete + (adjustedPreco * (comissaoPct / 100));
+            const adjustedVarTotais = totalCostPort > 0 ? (totalCostPort * (1 + whatifVolPct)) : (adjustedCustoVarUnit * adjustedVol);
+            const adjustedImpostosFat = (adjustedRecMensal * (totalImpostoPct / 100)) + icmsSt;
+            const adjustedFixosTotais = custosFixosTotais * (1 - whatifCustoFixoPct);
+            const adjustedCustosTotais = adjustedImpostosFat + adjustedVarTotais + adjustedFixosTotais + custosOcultosTotais;
+            const adjustedResultadoLiquido = adjustedRecMensal - adjustedCustosTotais;
+
+            document.getElementById('whatif-fat-out').innerText = formatBRL(adjustedRecMensal);
+            const whatifLucroEl = document.getElementById('whatif-lucro-out');
+            whatifLucroEl.innerText = formatBRL(adjustedResultadoLiquido);
+            whatifLucroEl.className = `font-bold text-sm ${adjustedResultadoLiquido >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
+
+            const avgPrice = totalQtdPort > 0 ? totalRecPort / totalQtdPort : pVenda;
+            const avgVarCost = totalQtdPort > 0 ? (totalCostPort + impostosFat) / totalQtdPort : (cVarUnit + (impostosFat / (vol || 1)));
+            const avgMCUnit = avgPrice - avgVarCost;
+
+            const beUnid = avgMCUnit > 0 ? Math.ceil(custosFixosCompletos / avgMCUnit) : 0;
+            const beRev = beUnid * avgPrice;
+
+            // Runway & Stress Test
+            const caixa = Math.max(custosFixosCompletos * 1.5, 1000);
+            const burn = Math.abs(resultadoLiquido < 0 ? -resultadoLiquido : (custosFixosCompletos * 0.1));
+            const runway = burn > 0 ? (caixa / burn).toFixed(1) : '12.0';
+
+            const burn30 = Math.max(1, custosFixosCompletos - (mcTotal * 0.7));
+            const burn50 = Math.max(1, custosFixosCompletos - (mcTotal * 0.5));
+            const burn100 = custosFixosCompletos;
+            const r30 = (caixa / burn30).toFixed(1);
+            const r50 = (caixa / burn50).toFixed(1);
+            const r100 = (caixa / burn100).toFixed(1);
+
+            // PRECIFICATION REVERSE (Markup)
+            const targetMargin = getVal('target_margin') / 100;
+            const impostosEVarPct = (totalImpostoPct / 100) + (comissaoPct / 100);
+            const denominador = (1 - targetMargin - impostosEVarPct);
+            const custoBaseUnit = cAquis + emb + frete;
+            globalSuggestedPrice = denominador > 0 ? (custoBaseUnit + (custosFixosCompletos / (totalVolEval || 1))) / denominador : custoBaseUnit * 2;
+            document.getElementById('suggested-price-out').innerText = formatBRL(globalSuggestedPrice);
+
+            // SIMULADOR REFIS
+            const refisDivida = getVal('refis_divida');
+            const refisMeses = parseInt(document.getElementById('refis_parcelas').value) || 60;
+            const taxaRefisMensal = 0.008; // ~0.8% a.m. Selic/Refis
+            const refisTotal = refisDivida * Math.pow(1 + taxaRefisMensal, refisMeses);
+            const refisParcela = refisTotal / refisMeses;
+            document.getElementById('refis-parcela-out').innerText = formatBRL(refisParcela);
+            document.getElementById('refis-total-out').innerText = formatBRL(refisTotal);
+            document.getElementById('refis-impact-out').innerText = refisParcela > (resultadoLiquido * 0.5) ? 'Crítico (>50% lucro)' : 'Gerenciável';
+
+            // COMPARADOR DE REGIMES TRIBUTÁRIOS & ALERTA DE ENQUADRAMENTO
+            const fatAnualEst = receitaBrutaAnual > 0 ? receitaBrutaAnual : (receitaBrutaMensal * 12);
+            const meiBadge = document.getElementById('mei-alert-badge');
+            const meiBox = document.getElementById('mei-warning-box');
+            
+            if(fatAnualEst > 81000) {
+                meiBadge.className = 'text-xs px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 font-semibold border border-rose-200';
+                meiBadge.innerText = '⚠️ Desenquadramento MEI!';
+                meiBox.classList.remove('hidden');
+                meiBox.innerHTML = `⚠️ <strong>Atenção:</strong> Seu faturamento anual estimado (${formatBRL(fatAnualEst)}) ultrapassa o limite legal do MEI (R$ 81.000/ano). É necessário o desenquadramento para o Simples Nacional.`;
+            } else if(fatAnualEst > 70000) {
+                meiBadge.className = 'text-xs px-2.5 py-1 rounded-lg bg-amber-50 text-amber-700 font-semibold border border-amber-200';
+                meiBadge.innerText = '⚡ Limite MEI Próximo';
+                meiBox.classList.remove('hidden');
+                meiBox.innerHTML = `⚡ <strong>Aviso:</strong> Faturamento anual estimado em ${formatBRL(fatAnualEst)}, próximo ao teto do MEI de R$ 81.000.`;
+            } else {
+                meiBadge.className = 'text-xs px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200';
+                meiBadge.innerText = '✅ Enquadramento OK';
+                meiBox.classList.add('hidden');
+            }
+
+            const impMeiAnual = 900; // ~R$ 75/mês
+            const impSimplesAnual = fatAnualEst * (aliquota > 0 ? (aliquota/100) : 0.06);
+            const impPresumidoAnual = fatAnualEst * 0.1133;
+            const impRealAnual = fatAnualEst * 0.1425;
+
+            const regTbody = document.getElementById('regimes-comparison-tbody');
+            regTbody.innerHTML = `
+                <tr><td class="p-2 font-medium">MEI (Teto R$ 81k)</td><td class="p-2">Fixo (~R$ 75/mês)</td><td class="p-2">${formatBRL(impMeiAnual)}</td><td class="p-2 font-semibold ${fatAnualEst <= 81000 ? 'text-emerald-600' : 'text-rose-600'}">${fatAnualEst <= 81000 ? 'Permitido' : 'Vedado'}</td></tr>
+                <tr class="bg-slate-50"><td class="p-2 font-medium">Simples Nacional</td><td class="p-2">${aliquota > 0 ? aliquota.toFixed(1) + '%' : '~6.0%'}</td><td class="p-2">${formatBRL(impSimplesAnual)}</td><td class="p-2 font-semibold text-emerald-600">Mais Econômico</td></tr>
+                <tr><td class="p-2 font-medium">Lucro Presumido</td><td class="p-2">~11.33%</td><td class="p-2">${formatBRL(impPresumidoAnual)}</td><td class="p-2 text-slate-600">Analisar</td></tr>
+                <tr class="bg-slate-50"><td class="p-2 font-medium">Lucro Real</td><td class="p-2">~14.25%</td><td class="p-2">${formatBRL(impRealAnual)}</td><td class="p-2 text-slate-600">Para Margens Apertadas</td></tr>
+            `;
+
+            // CFO Virtual Insights
+            const insightEl = document.getElementById('insight-main');
+            let auditSummaryText = "";
+            if(receitaBrutaMensal === 0) {
+                insightEl.innerText = 'Preencha os dados de faturamento e custos para o CFO Virtual realizar o diagnóstico.';
+                auditSummaryText = 'Nenhum dado financeiro suficiente fornecido para emissão de parecer conclusivo. Recomenda-se o preenchimento completo dos custos operacionais e de precificação.';
+            } else if(resultadoLiquido < 0) {
+                insightEl.innerText = `⚠️ Alerta Crítico: Prejuízo mensal de ${formatBRL(Math.abs(resultadoLiquido))}. Custos fixos e ocultos (${formatBRL(custosFixosCompletos)}) superam a Margem de Contribuição. Utilize o simulador de preços ou reduza despesas.`;
+                auditSummaryText = `Alerta Crítico: A empresa opera com prejuízo operacional mensal de ${formatBRL(Math.abs(resultadoLiquido))}. A Margem de Contribuição total de ${formatBRL(mcTotal)} é insuficiente para cobrir a estrutura de custos fixos e ocultos (${formatBRL(custosFixosCompletos)}). Ações corretivas urgentes são necessárias na política de preços ou enxugamento de despesas.`;
+            } else if(margemLiq < 10) {
+                insightEl.innerText = `⚠️ Atenção: Margem líquida de ${margemLiq.toFixed(1)}%. O faturamento é bom, mas o lucro final é apertado. Recomendado revisar a precificação reversa e cortar desperdícios mapeados.`;
+                auditSummaryText = `Atenção Executiva: A margem líquida encontra-se em patamar restrito (${margemLiq.toFixed(1)}%). Embora haja geração de caixa positiva, recomenda-se a revisão rigorosa de markup e a eliminação de perdas operacionais no checklist de desperdícios.`;
+            } else {
+                insightEl.innerText = `🚀 Excelente desempenho! Margem líquida saudável de ${margemLiq.toFixed(1)}% e fôlego de caixa de ${runway} meses. Seu ponto de equilíbrio exige ${beUnid} unidades.`;
+                auditSummaryText = `Desempenho Saudável: A empresa demonstra excelente solidez com margem líquida de ${margemLiq.toFixed(1)}% e fôlego de caixa estimado em ${runway} meses. O ponto de equilíbrio está assegurado em ${beUnid} unidades.`;
+            }
+
+            // Update Outputs UI
+            document.getElementById('pf-total-rec').innerText = formatBRL(totalRecPort);
+            document.getElementById('pf-total-cost').innerText = formatBRL(totalCostPort);
+            document.getElementById('pf-total-mc').innerText = formatBRL(totalRecPort - totalCostPort);
+            const netProfEl = document.getElementById('pf-net-profit');
+            netProfEl.innerText = formatBRL(resultadoLiquido);
+            netProfEl.className = `text-sm font-extrabold ${resultadoLiquido >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
+
+            document.getElementById('out-faturamento').innerText = formatBRL(receitaBrutaMensal);
+            document.getElementById('out-volume-lbl').innerText = `${totalVolEval.toLocaleString()} unidades/mês`;
+            
+            const outLucro = document.getElementById('out-lucro');
+            outLucro.innerText = formatBRL(resultadoLiquido);
+            outLucro.className = `text-xl font-bold mt-1 ${resultadoLiquido >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
+
+            document.getElementById('out-margem-liq').innerText = `Margem: ${margemLiq.toFixed(1)}%`;
+            document.getElementById('out-breakeven-unid').innerText = `${beUnid.toLocaleString()} un.`;
+            document.getElementById('out-breakeven-rev').innerText = formatBRL(beRev);
+            document.getElementById('out-runway').innerText = `${runway} meses`;
+
+            document.getElementById('stress-30').innerText = `${r30} meses`;
+            document.getElementById('stress-50').innerText = `${r50} meses`;
+            document.getElementById('stress-100').innerText = `${r100} meses`;
+
+            document.getElementById('dre-receita').innerText = formatBRL(receitaBrutaMensal);
+            document.getElementById('dre-impostos').innerText = `- ${formatBRL(impostosFat)}`;
+            document.getElementById('dre-var').innerText = `- ${formatBRL(custosVarTotais)}`;
+            document.getElementById('dre-mc').innerText = formatBRL(mcTotal);
+            document.getElementById('dre-fixos').innerText = `- ${formatBRL(custosFixosTotais)}`;
+            document.getElementById('dre-esg').innerText = `- ${formatBRL(custosOcultosTotais)}`;
+            document.getElementById('dre-resultado').innerText = formatBRL(resultadoLiquido);
+
+            // Populate Executive PDF Template Data
+            const empName = document.getElementById('empresa_nome').value.trim() || 'Empresa Não Identificada';
+            const empCnpj = document.getElementById('empresa_cnpj').value.trim() || '00.000.000/0001-00';
+            document.getElementById('pdf-rep-empresa').innerText = empName;
+            document.getElementById('pdf-rep-cnpj').innerText = empCnpj;
+            document.getElementById('pdf-rep-date').innerText = `Data: ${new Date().toLocaleDateString('pt-BR')}`;
+            document.getElementById('pdf-rep-fat').innerText = formatBRL(receitaBrutaMensal);
+            document.getElementById('pdf-rep-lucro').innerText = formatBRL(resultadoLiquido);
+            document.getElementById('pdf-rep-be').innerText = `${beUnid.toLocaleString()} un.`;
+            document.getElementById('pdf-rep-runway').innerText = `${runway} meses`;
+            document.getElementById('pdf-rep-audit-text').innerText = auditSummaryText;
+
+            const pdfDreTbody = document.getElementById('pdf-rep-dre-tbody');
+            pdfDreTbody.innerHTML = `
+                <tr><td class="p-2 font-medium">(=) Receita Bruta Total</td><td class="p-2 text-right font-bold text-slate-900">${formatBRL(receitaBrutaMensal)}</td></tr>
+                <tr class="bg-slate-50"><td class="p-2 text-slate-600">(-) Impostos s/ Faturamento</td><td class="p-2 text-right text-rose-600">- ${formatBRL(impostosFat)}</td></tr>
+                <tr><td class="p-2 text-slate-600">(-) Custos Variáveis & CMV</td><td class="p-2 text-right text-rose-600">- ${formatBRL(custosVarTotais)}</td></tr>
+                <tr class="bg-blue-50/50"><td class="p-2 font-medium text-blue-950">(=) Margem de Contribuição</td><td class="p-2 text-right font-bold text-blue-900">${formatBRL(mcTotal)}</td></tr>
+                <tr class="bg-slate-50"><td class="p-2 text-slate-600">(-) Custos Fixos Operacionais (CFO)</td><td class="p-2 text-right text-rose-600">- ${formatBRL(custosFixosTotais)}</td></tr>
+                <tr><td class="p-2 text-slate-600">(-) Custos Ocultos, ESG & Desperdícios</td><td class="p-2 text-right text-rose-600">- ${formatBRL(custosOcultosTotais)}</td></tr>
+                <tr class="bg-blue-100 font-bold"><td class="p-2.5 text-blue-950">(=) Resultado Líquido Operacional</td><td class="p-2.5 text-right text-blue-950 text-sm">${formatBRL(resultadoLiquido)}</td></tr>
+            `;
+
+            updateHealthBadge(margemLiq, resultadoLiquido);
+            renderSvgChart(totalVolEval, avgPrice, impostosFat, custosVarTotais, custosFixosCompletos, beUnid);
+            saveState();
+        }
+
+        function updateHealthBadge(margin, profit) {
+            const badge = document.getElementById('health-badge');
+            const text = document.getElementById('health-text');
+            const dot = badge.querySelector('span');
+            if(profit < 0) {
+                badge.className = 'flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold bg-rose-50 border-rose-300 text-rose-700 shadow-sm';
+                dot.className = 'w-2 h-2 rounded-full bg-rose-500 animate-pulse';
+                text.innerText = 'Saúde: Risco Crítico';
+            } else if(margin < 8) {
+                badge.className = 'flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold bg-amber-50 border-amber-300 text-amber-700 shadow-sm';
+                dot.className = 'w-2 h-2 rounded-full bg-amber-500 animate-pulse';
+                text.innerText = 'Saúde: Atenção';
+            } else {
+                badge.className = 'flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold bg-emerald-50 border-emerald-300 text-emerald-700 shadow-sm';
+                dot.className = 'w-2 h-2 rounded-full bg-emerald-500 animate-pulse';
+                text.innerText = 'Saúde: Saudável';
+            }
+        }
+
+        function renderSvgChart(curVol, preco, impostosTot, varTot, fixosTot, beUnid) {
+            const svg = document.getElementById('svg-chart');
+            if(!svg) return;
+            svg.innerHTML = '';
+            const maxVol = Math.max(curVol * 1.8, beUnid * 1.5, 500);
+            const varUnit = (impostosTot + varTot) / (curVol || 1);
+            const maxRev = maxVol * preco;
+            const maxCost = fixosTot + (maxVol * varUnit);
+            const maxY = Math.max(maxRev, maxCost, 1000);
+
+            const w = 500, h = 250, pad = 35;
+            const scaleX = v => pad + (v / maxVol) * (w - 2 * pad);
+            const scaleY = val => h - pad - (val / maxY) * (h - 2 * pad);
+
+            for(let i=0; i<=4; i++) {
+                const yVal = (maxY / 4) * i;
+                const yPos = scaleY(yVal);
+                svg.innerHTML += `<line x1="${pad}" y1="${yPos}" x2="${w - pad}" y2="${yPos}" stroke="#334155" stroke-dasharray="3,3" />`;
+                svg.innerHTML += `<text x="${pad - 5}" y="${yPos + 4}" fill="#94a3b8" font-size="9" text-anchor="end">R$ ${(yVal/1000).toFixed(0)}k</text>`;
+            }
+
+            svg.innerHTML += `<line x1="${scaleX(0)}" y1="${scaleY(0)}" x2="${scaleX(maxVol)}" y2="${scaleY(maxVol * preco)}" stroke="#10b981" stroke-width="2.5" />`;
+            svg.innerHTML += `<line x1="${scaleX(0)}" y1="${scaleY(fixosTot)}" x2="${scaleX(maxVol)}" y2="${scaleY(fixosTot + (maxVol * varUnit))}" stroke="#f43f5e" stroke-width="2.5" />`;
+
+            if(beUnid > 0 && beUnid <= maxVol) {
+                const beX = scaleX(beUnid);
+                const beY = scaleY(beUnid * preco);
+                svg.innerHTML += `<circle cx="${beX}" cy="${beY}" r="5" fill="#fbbf24" stroke="#fff" stroke-width="1.5" />`;
+                svg.innerHTML += `<text x="${beX}" y="${h - 15}" fill="#fbbf24" font-size="9" text-anchor="middle">BE: ${beUnid} un.</text>`;
+            }
+        }
+
+        function formatBRL(val) {
+            return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        function saveState() {
+            try {
+                const state = { portfolio: portfolioProducts, customLosses: customLosses };
+                document.querySelectorAll('input, select').forEach(el => { if(el.id) state[el.id] = el.value; });
+                localStorage.setItem('contaverde_erp_state_v8', JSON.stringify(state));
+            } catch(e) {}
+        }
+
+        function loadState() {
+            try {
+                const saved = localStorage.getItem('contaverde_erp_state_v8');
+                if(saved) {
+                    const state = JSON.parse(saved);
+                    if(state.portfolio) portfolioProducts = state.portfolio;
+                    if(state.customLosses) customLosses = state.customLosses;
+                    for(let k in state) {
+                        if(k === 'portfolio' || k === 'customLosses') continue;
+                        const el = document.getElementById(k);
+                        if(el) el.value = state[k];
+                    }
+                }
+            } catch(e) {}
+            renderPortfolioTable();
+            renderCustomLosses();
+            onRegimeChange();
+            calculate();
+        }
+
+        function backupJSON() {
+            openExportFilenameModal('json');
+        }
+
+        function executeJsonBackupDownload(finalFilename) {
+            try {
+                const state = { portfolio: portfolioProducts, customLosses: customLosses };
+                document.querySelectorAll('input, select').forEach(el => { if(el.id) state[el.id] = el.value; });
+                const blob = new Blob([JSON.stringify(state, null, 2)], {type: 'application/json'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = finalFilename;
+                a.click();
+                URL.revokeObjectURL(url);
+                showToast(`Backup JSON "${finalFilename}" exportado!`);
+            } catch(e) { showToast('Erro ao exportar JSON', 'error'); }
+        }
+
+        function triggerRestore() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = e => {
+                const file = e.target.files[0];
+                if(!file) return;
+                const reader = new FileReader();
+                reader.onload = ev => {
+                    try {
+                        const state = JSON.parse(ev.target.result);
+                        if(state.portfolio) portfolioProducts = state.portfolio;
+                        if(state.customLosses) customLosses = state.customLosses;
+                        for(let k in state) {
+                            if(k === 'portfolio' || k === 'customLosses') continue;
+                            const el = document.getElementById(k);
+                            if(el) el.value = state[k];
+                        }
+                        renderPortfolioTable();
+                        renderCustomLosses();
+                        onRegimeChange();
+                        calculate();
+                        showToast('Dados restaurados!');
+                    } catch(err) { showToast('Erro ao ler arquivo', 'error'); }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        function exportExcel() {
+            openExportFilenameModal('excel');
+        }
+
+        function executeExcelExportDownload(finalFilename) {
+            if(typeof XLSX === 'undefined') { showToast('SheetJS indisponível', 'error'); return; }
+            const wb = XLSX.utils.book_new();
+            const data = [
+                ["ContaVerde ERP Pro v8.6 - Relatório Gerencial"],
+                ["Empresa", document.getElementById('empresa_nome').value],
+                ["CNPJ", document.getElementById('empresa_cnpj').value],
+                [""],
+                ["Faturamento Bruto Mensal", document.getElementById('out-faturamento').innerText],
+                ["Lucro Líquido", document.getElementById('out-lucro').innerText],
+                ["Margem Líquida", document.getElementById('out-margem-liq').innerText],
+                ["Ponto de Equilíbrio", document.getElementById('out-breakeven-unid').innerText]
+            ];
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(data), "Resumo");
+            XLSX.writeFile(wb, finalFilename);
+            showToast(`Excel "${finalFilename}" exportado!`);
+        }
+
+        function generateReport() {
+            openExportFilenameModal('pdf');
+        }
+
+        function executePdfReportDownload(finalFilename) {
+            if(typeof html2pdf === 'undefined') { showToast('html2pdf indisponível', 'error'); return; }
+            showToast('Gerando relatório PDF Executivo Formal...', 'info');
+            
+            const repElement = document.getElementById('executive-pdf-report');
+            if(!repElement) return;
+            
+            // Temporarily make the executive report container visible for html2pdf capture
+            repElement.style.display = 'block';
+
+            html2pdf().from(repElement).set({
+                margin: 10,
+                filename: finalFilename,
+                image: {type: 'jpeg', quality: 0.98},
+                html2canvas: {scale: 2, useCORS: true},
+                jsPDF: {unit: 'mm', format: 'a4', orientation: 'portrait'}
+            }).save().then(() => {
+                repElement.style.display = 'none';
+                showToast(`PDF "${finalFilename}" baixado com sucesso!`);
+            });
+        }
+
+        window.onload = function() {
+            initPitchCarousel();
+            loadState();
+        };
+    </script>
+</body>
+</html>
